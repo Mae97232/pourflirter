@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mes Favoris - Pourflirter</title>
+  <link rel="stylesheet" href="Design/style.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">
+      💙 <a href="accueil.html" style="text-decoration:none; color:inherit;">Pourflirter</a>
+    </div>
+    <div class="search-bar">
+      <input type="text" placeholder="Recherche...">
+      <button>🔍</button>
+    </div>
+    <nav class="nav-links">
+      <a href="message.html">Messages</a>
+      <a href="#">Crédits (50)</a>
+      <a href="#" id="logout">Déconnexion</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <main class="main-content">
+      <h2>Mes Favoris</h2>
+
+      <!-- CONTENEUR DYNAMIQUE -->
+      <div class="profile-cards" id="favorites-container">
+        <p>Chargement...</p>
+      </div>
+    </main>
+
+    <aside class="sidebar-right">
+      <a href="mes-photos.html">Mes Photos</a>
+      <a href="profil.html">Mon Profil</a>
+      <a href="mes-favoris.html" class="active">Mes Favoris</a>
+      <a href="membres_bloques.html">Membres Bloqués</a>
+      <a href="achat_credits.html">Acheter Crédits</a>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <a href="#">Service Clients</a>
+    <a href="#">CGV</a>
+    <a href="#">Protection des données</a>
+    <a href="#">Mentions légales</a>
+    <a href="#">EN / FR</a>
+    © 2025 Pourflirter. Tous droits réservés.
+  </footer>
+
+<!-- ================= SUPABASE ================= -->
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+// 🔴 REMPLACE PAR TES CLÉS
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+// ================= AUTH =================
+const { data: auth } = await supabase.auth.getUser();
+if (!auth.user) window.location.href = "login.html";
+const myId = auth.user.id;
+
+// ================= CHARGER FAVORIS =================
+async function loadFavorites() {
+  const container = document.getElementById("favorites-container");
+  container.innerHTML = "";
+
+  const { data, error } = await supabase
+    .from("favorites")
+    .select(`
+      favorite_user_id,
+      profiles:favorite_user_id (
+        id,
+        username,
+        birthdate,
+        birthplace,
+        photo
+      )
+    `)
+    .eq("user_id", myId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error(error);
+    container.innerHTML = "<p>Erreur lors du chargement des favoris.</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = "<p>Tu n’as encore ajouté aucun favori.</p>";
+    return;
+  }
+
+  data.forEach(fav => {
+    const u = fav.profiles;
+    if (!u) return;
+
+    const age = u.birthdate ? getAge(u.birthdate) + " ans" : "";
+    const photo = u.photo || "default.jpg";
+
+    const card = document.createElement("div");
+    card.className = "profile-card";
+    card.style.cursor = "pointer";
+    card.onclick = () => {
+      window.location.href = `profil.html?user=${u.id}`;
+    };
+
+    card.innerHTML = `
+      <img src="${photo}" alt="Avatar">
+      <div class="profile-info">
+        <p><strong>${u.username}</strong></p>
+        <p>${age} ${u.birthplace ? "- " + u.birthplace : ""}</p>
+      </div>
+    `;
+
+    container.appendChild(card);
+  });
+}
+
+// ================= UTILS =================
+function getAge(birthdate) {
+  const d = new Date(birthdate);
+  const diff = Date.now() - d.getTime();
+  return Math.abs(new Date(diff).getUTCFullYear() - 1970);
+}
+
+// ================= LOGOUT =================
+document.getElementById("logout").onclick = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "login.html";
+};
+
+// LANCER
+loadFavorites();
+</script>
+
+</body>
+</html>

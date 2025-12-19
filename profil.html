@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mon Profil – Pourflirter</title>
+  <link rel="icon" href="Image/favicon.ico.jpg" />
+  <link rel="stylesheet" href="Design/profil-style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">💙 <a href="accueil.html" style="color:inherit;text-decoration:none">Pourflirter</a></div>
+  <div class="search-bar">
+    <input type="text" placeholder="Recherche..."><button>🔍</button>
+  </div>
+  <nav class="nav-links">
+    <a href="message.html">Messages</a>
+    <a href="#">Crédits (50)</a>
+    <a href="#" id="logout">Déconnexion</a>
+  </nav>
+</header>
+
+<div class="layout">
+
+  <div class="main-content">
+
+    <!-- PHOTOS -->
+    <section class="section">
+      <h3 class="section-title">Mes photos</h3>
+      <div id="photo-grid" class="photo-grid"></div>
+    </section>
+
+    <!-- PROFIL -->
+    <section class="section">
+      <h2 id="user-name" class="section-title"></h2>
+
+      <div class="profile-photo-wrapper">
+        <label id="photo-label">
+          <img id="profile-photo" src="default.jpg">
+          <div class="photo-overlay">Changer la photo</div>
+        </label>
+        <input type="file" id="profile-photo-upload" accept="image/*" hidden>
+      </div>
+
+      <ul class="infos-profil">
+        <li><strong>Âge :</strong> <span id="age"></span></li>
+        <li><strong>Signe :</strong> <span id="zodiac-sign"></span></li>
+        <li><strong>Sexe :</strong> <span id="gender"></span></li>
+        <li><strong>Ville :</strong> <span id="birthplace"></span></li>
+        <li><strong>Intérêts :</strong> <span id="interets"></span></li>
+        <li><strong>Rayon :</strong>
+          <select id="radius-select">
+            <option value="5">5 km</option>
+            <option value="10">10 km</option>
+            <option value="20">20 km</option>
+            <option value="50">50 km</option>
+            <option value="100">100 km</option>
+          </select>
+        </li>
+      </ul>
+
+      <div id="message-button-container"></div>
+    </section>
+
+  </div>
+
+  <aside class="sidebar-right">
+    <a href="mes-photos.html">Mes Photos</a>
+    <a href="profil.html" class="active">Mon Profil</a>
+    <a href="mes-favoris.html">Mes Favoris</a>
+    <a href="membres_bloques.html">Membres Bloqués</a>
+    <a href="achat_credits.html">Acheter Crédits</a>
+  </aside>
+
+</div>
+
+<footer class="footer">
+  <a href="#">CGV</a> | <a href="#">Protection des données</a> | <a href="#">Mentions légales</a>
+</footer>
+
+<!-- ================= SUPABASE ================= -->
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+// AUTH
+const { data: auth } = await supabase.auth.getUser();
+if (!auth.user) location.href = "login.html";
+
+const myId = auth.user.id;
+const viewedId = new URLSearchParams(location.search).get("user") || myId;
+const isOwner = myId === viewedId;
+
+// PROFIL
+async function loadProfile() {
+  const { data: user } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", viewedId)
+    .single();
+
+  if (!user) return;
+
+  document.getElementById("user-name").textContent = user.username;
+  document.getElementById("profile-photo").src = user.photo || "default.jpg";
+  document.getElementById("age").textContent = user.birthdate ? getAge(user.birthdate) + " ans" : "";
+  document.getElementById("zodiac-sign").textContent = user.birthdate ? getZodiac(user.birthdate) : "";
+  document.getElementById("gender").textContent = user.gender || "";
+  document.getElementById("birthplace").textContent = user.birthplace || "";
+  document.getElementById("interets").textContent = user.interests || "";
+  document.getElementById("radius-select").value = user.search_radius || 20;
+
+  if (!isOwner) {
+    document.getElementById("radius-select").disabled = true;
+    document.querySelector(".photo-overlay").style.display = "none";
+
+    // MESSAGE
+    const msgBtn = document.createElement("button");
+    msgBtn.textContent = "✉️ Envoyer un message";
+    msgBtn.onclick = () => location.href = `message.html?to=${viewedId}`;
+
+    // FAVORI
+    const favBtn = document.createElement("button");
+    favBtn.id = "fav-btn";
+
+    const { data: fav } = await supabase
+      .from("favorites")
+      .select("id")
+      .eq("user_id", myId)
+      .eq("favorite_user_id", viewedId)
+      .single();
+
+    favBtn.textContent = fav ? "💔 Retirer des favoris" : "❤️ Ajouter aux favoris";
+
+    favBtn.onclick = async () => {
+      if (fav) {
+        await supabase
+          .from("favorites")
+          .delete()
+          .eq("user_id", myId)
+          .eq("favorite_user_id", viewedId);
+        favBtn.textContent = "❤️ Ajouter aux favoris";
+      } else {
+        await supabase
+          .from("favorites")
+          .insert({ user_id: myId, favorite_user_id: viewedId });
+        favBtn.textContent = "💔 Retirer des favoris";
+      }
+    };
+
+    const box = document.getElementById("message-button-container");
+    box.appendChild(msgBtn);
+    box.appendChild(favBtn);
+  }
+
+  loadGallery();
+}
+
+// GALERIE
+async function loadGallery() {
+  const { data: files } = await supabase.storage
+    .from("user_photos")
+    .list(viewedId + "/");
+
+  const grid = document.getElementById("photo-grid");
+  grid.innerHTML = "";
+
+  files?.forEach(f => {
+    const url = supabase.storage
+      .from("user_photos")
+      .getPublicUrl(`${viewedId}/${f.name}`).data.publicUrl;
+    grid.innerHTML += `<div class="photo-slot"><img src="${url}"></div>`;
+  });
+
+  if (isOwner) {
+    const add = document.createElement("div");
+    add.className = "photo-slot";
+    add.textContent = "+ Ajouter une photo";
+    add.onclick = uploadGalleryPhoto;
+    grid.appendChild(add);
+  }
+}
+
+// UPLOAD GALERIE
+function uploadGalleryPhoto() {
+  const i = document.createElement("input");
+  i.type = "file";
+  i.accept = "image/*";
+  i.onchange = async e => {
+    const file = e.target.files[0];
+    await supabase.storage
+      .from("user_photos")
+      .upload(`${myId}/${Date.now()}.jpg`, file);
+    loadGallery();
+  };
+  i.click();
+}
+
+// PHOTO PROFIL
+if (isOwner) {
+  document.getElementById("photo-label").onclick = () =>
+    document.getElementById("profile-photo-upload").click();
+
+  document.getElementById("profile-photo-upload").onchange = async e => {
+    const file = e.target.files[0];
+    const path = `${myId}/profile.jpg`;
+    await supabase.storage.from("profile_photos").upload(path, file, { upsert:true });
+    const url = supabase.storage.from("profile_photos").getPublicUrl(path).data.publicUrl;
+    await supabase.from("profiles").update({ photo: url }).eq("id", myId);
+    document.getElementById("profile-photo").src = url;
+  };
+}
+
+// RAYON
+document.getElementById("radius-select").onchange = e =>
+  isOwner && supabase.from("profiles")
+    .update({ search_radius: +e.target.value }).eq("id", myId);
+
+// LOGOUT
+document.getElementById("logout").onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = "login.html";
+};
+
+// UTILS
+function getAge(d){return new Date().getFullYear()-new Date(d).getFullYear();}
+function getZodiac(d){
+  const m=new Date(d).getMonth()+1,day=new Date(d).getDate();
+  return (m==3&&day>=21)||(m==4&&day<=19)?"Bélier":
+         (m==4&&day>=20)||(m==5&&day<=20)?"Taureau":
+         (m==5&&day>=21)||(m==6&&day<=20)?"Gémeaux":
+         (m==6&&day>=21)||(m==7&&day<=22)?"Cancer":
+         (m==7&&day>=23)||(m==8&&day<=22)?"Lion":
+         (m==8&&day>=23)||(m==9&&day<=22)?"Vierge":
+         (m==9&&day>=23)||(m==10&&day<=22)?"Balance":
+         (m==10&&day>=23)||(m==11&&day<=21)?"Scorpion":
+         (m==11&&day>=22)||(m==12&&day<=21)?"Sagittaire":
+         (m==12&&day>=22)||(m==1&&day<=19)?"Capricorne":
+         (m==1&&day>=20)||(m==2&&day<=18)?"Verseau":"Poissons";
+}
+
+loadProfile();
+</script>
+
+</body>
+</html>
+

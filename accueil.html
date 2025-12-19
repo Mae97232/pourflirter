@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Accueil - Pourflirter</title>
+  <link rel="stylesheet" href="Design/accueil.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+
+  <header class="header">
+    <div class="logo">💙 Pourflirter</div>
+    <div class="search-bar"><input type="text" placeholder="Recherche..."></div>
+    <nav class="nav-links">
+      <a href="#">Messages</a>
+      <a href="#">Crédits (50)</a>
+      <a href="#" id="logout">Déconnexion</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <!-- Profil utilisateur connecté -->
+    <aside class="sidebar-left" id="user-profile"></aside>
+
+    <!-- Contenu principal -->
+    <main class="main-content">
+
+      <!-- Suggestions -->
+      <section class="profile-section">
+        <h2 class="section-title">Suggestions</h2>
+        <div class="profiles-grid" id="suggestions"></div>
+      </section>
+
+      <!-- En ligne -->
+      <section class="profile-section">
+        <h2 class="section-title">En ligne</h2>
+        <div class="profiles-grid" id="en-ligne"></div>
+      </section>
+
+      <!-- Derniers visiteurs -->
+      <section class="profile-section">
+        <h2 class="section-title">Derniers visiteurs</h2>
+        <div class="profiles-grid" id="visiteurs"></div>
+      </section>
+
+    </main>
+
+    <!-- Sidebar droite -->
+    <aside class="sidebar-right">
+      <a href="mes-photos.html">Mes Photos</a>
+      <a href="profil.html">Mon Profil</a>
+      <a href="mes-favoris.html">Mes Favoris</a>
+      <a href="membres_bloques.html">Membres Bloqués</a>
+      <a href="achat_credits.html">Acheter Crédits</a>
+    </aside>
+  </div>
+
+  <footer class="footer">
+    <a href="#">Service Clients</a>
+    <a href="#">CGV</a>
+    <a href="#">Protection des données</a>
+    <a href="#">Mentions légales</a>
+    <a href="#">EN / FR</a>
+    <div>© 2025 Pourflirter. Tous droits réservés.</div>
+  </footer>
+
+  <!-- SCRIPT SUPABASE -->
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+    // ⚠️ REMPLACE ICI AVEC TES VALEURS SUPABASE
+    const supabase = createClient(
+      "YOUR_SUPABASE_URL",
+      "YOUR_SUPABASE_ANON_KEY"
+    );
+
+    // 🔵 Vérifier si l’utilisateur est connecté
+    const { data: auth } = await supabase.auth.getUser();
+    if (!auth.user) window.location.href = "login.html";
+
+    const myId = auth.user.id;
+
+    // 🟣 Charger le profil utilisateur connecté
+    async function loadMyProfile() {
+      const { data: user } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", myId)
+        .single();
+
+      document.getElementById("user-profile").innerHTML = `
+        <div class="profile-card">
+          <img src="${user.photo && user.photo !== '' ? user.photo : 'default.jpg'}">
+          <h3 class="username">${user.username}</h3>
+          <p class="info">${user.gender || 'Non renseigné'}</p>
+          <button class="certif-btn">Faites vous certifier !</button>
+          <p class="localisation">(${user.birthplace || 'Inconnu'})</p>
+          <div class="stats">
+            <div><strong>${user.adhesion ?? 0}</strong><br>Adhésion</div>
+            <div><strong>${user.adeptes ?? 0}</strong><br>Adeptes</div>
+            <div><strong>${user.contacts ?? 0}</strong><br>Contacts</div>
+          </div>
+        </div>
+      `;
+    }
+
+    // 🟣 Fonction affichage cartes
+    function afficherCartes(containerId, profiles) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      profiles.forEach(p => {
+        container.innerHTML += `
+          <div class="profile-card" onclick="openProfile('${p.id}')">
+            <img src="${p.photo && p.photo !== '' ? p.photo : 'default.jpg'}">
+            <div class="profile-info">
+              <span class="username">${p.username}</span>
+              <span class="details">${p.gender} (${p.birthplace})</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // 🟣 Voir un profil + enregistrer la visite
+    window.openProfile = async function(id) {
+      if (id !== myId) {
+        await supabase.from("visits").insert({
+          visitor_id: myId,
+          visited_id: id
+        });
+      }
+      window.location.href = "profil.html?user=" + id;
+    };
+
+    // 🟣 Suggestions
+    async function loadSuggestions() {
+      const { data } = await supabase
+        .from("profiles")
+        .select("*")
+        .neq("id", myId)
+        .limit(6);
+
+      afficherCartes("suggestions", data);
+    }
+
+    // 🟣 Utilisateurs en ligne
+    async function loadOnline() {
+      const { data } = await supabase
+        .from("online_users")
+        .select("user_id, profiles(*)")
+        .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
+
+      afficherCartes("en-ligne", data.map(x => x.profiles));
+    }
+
+    // 🟣 Derniers visiteurs
+    async function loadVisitors() {
+      const { data } = await supabase
+        .from("visits")
+        .select("visitor_id, profiles(*)")
+        .eq("visited_id", myId)
+        .order("created_at", { ascending: false })
+        .limit(10);
+
+      afficherCartes("visiteurs", data.map(v => v.profiles));
+    }
+
+    // 🟣 Mettre à jour le statut en ligne
+    async function updateOnlineStatus() {
+      await supabase.from("online_users").upsert({
+        user_id: myId,
+        last_seen: new Date().toISOString()
+      });
+    }
+    setInterval(updateOnlineStatus, 20000);
+
+    // 🟣 Déconnexion
+    document.getElementById("logout").onclick = async () => {
+      await supabase.auth.signOut();
+      window.location.href = "login.html";
+    };
+
+    // 🟣 Lancer tout
+    await updateOnlineStatus();
+    await loadMyProfile();
+    await loadSuggestions();
+    await loadOnline();
+    await loadVisitors();
+
+  </script>
+
+</body>
+</html>

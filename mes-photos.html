@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Mes Photos - Pourflirter</title>
+  <link rel="stylesheet" href="Design/style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">💙 <a href="accueil.html" style="text-decoration:none;color:inherit;">Pourflirter</a></div>
+  <div class="search-bar">
+    <input type="text" placeholder="Recherche...">
+    <button>🔍</button>
+  </div>
+  <nav class="nav-links">
+    <a href="message.html">Messages</a>
+    <a href="#">Crédits (50)</a>
+    <a href="#" id="logout">Déconnexion</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <main class="main-content">
+    <h2>Mes Photos</h2>
+
+    <div class="photo-grid" id="photoGrid">
+
+      <!-- 6 cases FIXES -->
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+      <div class="photo-slot">
+        <input type="file" accept="image/*" class="photo-input">
+        <div class="photo-placeholder">+ Ajouter une photo</div>
+      </div>
+
+    </div>
+  </main>
+
+  <aside class="sidebar-right">
+    <a href="mes-photos.html" class="active">Mes Photos</a>
+    <a href="profil.html">Mon Profil</a>
+    <a href="mes-favoris.html">Mes Favoris</a>
+    <a href="membres_bloques.html">Membres Bloqués</a>
+    <a href="achat_credits.html">Acheter Crédits</a>
+  </aside>
+</div>
+
+<footer class="footer">
+  © 2025 Pourflirter
+</footer>
+
+<!-- SCRIPT SUPABASE -->
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+// utilisateur connecté
+const { data: auth } = await supabase.auth.getUser();
+if (!auth.user) window.location.href = "login.html";
+const myId = auth.user.id;
+
+const slots = document.querySelectorAll(".photo-slot");
+const MAX_PHOTOS = 6;
+
+// =======================
+// CHARGER LES PHOTOS
+// =======================
+async function loadPhotos() {
+  const { data: files } = await supabase.storage
+    .from("user_photos")
+    .list(myId + "/", { limit: MAX_PHOTOS });
+
+  slots.forEach((slot, index) => {
+    const input = slot.querySelector(".photo-input");
+
+    // reset visuel
+    slot.innerHTML = `
+      <input type="file" accept="image/*" class="photo-input">
+      <div class="photo-placeholder">+ Ajouter une photo</div>
+    `;
+
+    const newInput = slot.querySelector(".photo-input");
+
+    // photo existante
+    if (files && files[index]) {
+      const { data } = supabase.storage
+        .from("user_photos")
+        .getPublicUrl(`${myId}/${files[index].name}`);
+
+      slot.innerHTML = `<img src="${data.publicUrl}" class="photo-img">`;
+    }
+
+    // clic = upload
+    slot.onclick = () => newInput.click();
+
+    newInput.onchange = (e) => {
+      const file = e.target.files[0];
+      if (file) uploadPhoto(file, index);
+    };
+  });
+}
+
+// =======================
+// UPLOAD PHOTO
+// =======================
+async function uploadPhoto(file, index) {
+  const fileName = `${myId}/${index}.jpg`;
+
+  await supabase.storage
+    .from("user_photos")
+    .upload(fileName, file, { upsert: true });
+
+  loadPhotos();
+}
+
+// =======================
+// LOGOUT
+// =======================
+document.getElementById("logout").onclick = async () => {
+  await supabase.auth.signOut();
+  window.location.href = "login.html";
+};
+
+loadPhotos();
+</script>
+
+</body>
+</html>

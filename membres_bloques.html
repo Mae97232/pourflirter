@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Membres bloqués - Pourflirter</title>
+  <link rel="stylesheet" href="Design/style.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">💙 <a href="accueil.html" style="color:inherit;text-decoration:none">Pourflirter</a></div>
+  <div class="search-bar">
+    <input type="text" placeholder="Recherche...">
+    <button>🔍</button>
+  </div>
+  <nav class="nav-links">
+    <a href="message.html">Messages</a>
+    <a href="#">Crédits (50)</a>
+    <a href="#" id="logout">Déconnexion</a>
+  </nav>
+</header>
+
+<div class="layout">
+  <main class="main-content">
+    <h2 class="page-title">Membres bloqués</h2>
+    <div class="blocked-list" id="blockedList"></div>
+  </main>
+
+  <aside class="sidebar-right">
+    <a href="mes-photos.html">Mes Photos</a>
+    <a href="profil.html">Mon Profil</a>
+    <a href="mes-favoris.html">Mes Favoris</a>
+    <a href="membres_bloques.html" class="active">Membres Bloqués</a>
+    <a href="achat_credits.html">Acheter Crédits</a>
+  </aside>
+</div>
+
+<footer class="footer">
+  <a href="#">CGV</a> | <a href="#">Protection des données</a> | <a href="#">Mentions légales</a>
+</footer>
+
+<!-- ================= SUPABASE ================= -->
+<script type="module">
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+
+const supabase = createClient(
+  "YOUR_SUPABASE_URL",
+  "YOUR_SUPABASE_ANON_KEY"
+);
+
+// AUTH
+const { data: auth } = await supabase.auth.getUser();
+if (!auth.user) location.href = "login.html";
+const myId = auth.user.id;
+
+const list = document.getElementById("blockedList");
+
+// CHARGER BLOQUÉS
+async function loadBlockedUsers() {
+  const { data, error } = await supabase
+    .from("blocked_users")
+    .select(`
+      id,
+      blocked_user_id,
+      profiles:blocked_user_id (
+        username,
+        photo
+      )
+    `)
+    .eq("user_id", myId);
+
+  if (error) {
+    console.error(error);
+    list.innerHTML = "<p>Erreur chargement</p>";
+    return;
+  }
+
+  list.innerHTML = "";
+
+  if (!data.length) {
+    list.innerHTML = "<p>Aucun membre bloqué.</p>";
+    return;
+  }
+
+  data.forEach(row => {
+    const div = document.createElement("div");
+    div.className = "blocked-member";
+
+    div.innerHTML = `
+      <img src="${row.profiles.photo || 'default.jpg'}" class="avatar">
+      <div class="member-info">
+        <p class="username">${row.profiles.username}</p>
+        <button class="unblock-btn">Débloquer</button>
+      </div>
+    `;
+
+    div.querySelector(".unblock-btn").onclick = async () => {
+      await supabase
+        .from("blocked_users")
+        .delete()
+        .eq("id", row.id);
+
+      loadBlockedUsers();
+    };
+
+    list.appendChild(div);
+  });
+}
+
+// LOGOUT
+document.getElementById("logout").onclick = async () => {
+  await supabase.auth.signOut();
+  location.href = "login.html";
+};
+
+loadBlockedUsers();
+</script>
+
+</body>
+</html>

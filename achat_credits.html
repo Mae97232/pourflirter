@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Achat de crédits - Pourflirter</title>
+  <link rel="stylesheet" href="Design/achat-credit.css">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="logo">💙 <a href="accueil.html" style="text-decoration:none; color:inherit;"><span>Pourflirter</span></a></div>
+    <div class="search-bar">
+      <input type="text" placeholder="Recherche...">
+      <button>🔍</button>
+    </div>
+    <nav class="nav-links">
+      <a href="#">Messages</a>
+      <a href="#">Crédits (50)</a>
+      <a href="#">Déconnexion</a>
+    </nav>
+  </header>
+
+  <div class="layout">
+    <!-- MAIN -->
+    <main class="main-content">
+      <h2 class="page-title">Acheter des crédits</h2>
+      <p class="credit-description">
+        Rechargez vos crédits en toute sécurité et sans abonnement.<br>
+        Les crédits seront ajoutés immédiatement sur votre compte après le paiement. <strong>Transaction 100% sécurisée.</strong>
+      </p>
+
+      <div class="credit-packages">
+        <div class="credit-card">
+          <h3>175 crédits</h3>
+          <p>34,99 €</p>
+          <span class="note">sans abonnement</span>
+          <button>Acheter</button>
+        </div>
+        <div class="credit-card">
+          <h3>500 crédits</h3>
+          <p>89,99 €</p>
+          <span class="note">sans abonnement</span>
+          <button>Acheter</button>
+        </div>
+        <div class="credit-card">
+          <h3>900 crédits</h3>
+          <p>149,99 €</p>
+          <span class="note">sans abonnement</span>
+          <button>Acheter</button>
+        </div>
+        <div class="credit-card">
+          <h3>1550 crédits</h3>
+          <p>249,99 €</p>
+          <span class="note">sans abonnement</span>
+          <button>Acheter</button>
+        </div>
+        <div class="credit-card">
+          <h3>3250 crédits</h3>
+          <p>499,99 €</p>
+          <span class="note">sans abonnement</span>
+          <button>Acheter</button>
+        </div>
+      </div>
+
+      <!-- Message de confirmation -->
+      <div id="confirmation-message"></div>
+    </main>
+
+    <!-- SIDEBAR DROITE -->
+    <aside class="sidebar-right">
+      <a href="mes-photos.html">Mes Photos</a>
+      <a href="profil.html">Mon Profil</a>
+      <a href="mes-favoris.html">Mes Favoris</a>
+      <a href="membres_bloques.html">Membres Bloqués</a>
+      <a href="achat_credits.html" class="active">Acheter Crédits</a>
+    </aside>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <a href="#">Service Clients</a>
+    <a href="#">CGV</a>
+    <a href="#">Protection des données</a>
+    <a href="#">Mentions légales</a>
+    <a href="#">EN / FR</a>
+    © 2025 Pourflirter. Tous droits réservés.
+  </footer>
+
+  <!-- JS Achat crédits -->
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const buttons = document.querySelectorAll(".credit-card button");
+      const confirmation = document.getElementById("confirmation-message");
+
+      buttons.forEach(button => {
+        button.addEventListener("click", (e) => {
+          const card = e.target.closest(".credit-card");
+          const credits = card.querySelector("h3").textContent;
+          const price = card.querySelector("p").textContent;
+
+          // Afficher la confirmation
+          confirmation.textContent = `✅ Vous avez acheté ${credits} pour ${price}. Vos crédits seront ajoutés sous peu.`;
+          confirmation.style.display = "block";
+
+          // Masquer après 5 secondes
+          setTimeout(() => {
+            confirmation.style.display = "none";
+          }, 5000);
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>

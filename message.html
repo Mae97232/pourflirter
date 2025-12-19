@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Messages - Pourflirter</title>
+  <link rel="stylesheet" href="Design/message.css">
+</head>
+<body>
+
+<header class="header">
+<div class="logo">💙 <a href="accueil.html" style="text-decoration:none; color:inherit;"><span>Pourflirter</span></a></div>
+
+  <div class="header-center">
+    <div class="search-bar">
+      <input type="text" placeholder="Recherche...">
+      <button>🔍</button>
+    </div>
+  </div>
+
+  <div class="header-actions">
+    <div class="header-links">
+      <a href="#">Messages</a>
+      <a href="#">Crédits</a>
+      <a href="#">Déconnexion</a>
+    </div>
+    <div class="user-photo">
+      <img src="images/utilisateur.jpg" alt="Ma photo">
+    </div>
+  </div>
+</header>
+
+  <div class="layout">
+
+    <!-- Liste des conversations précédentes -->
+    <aside class="conversations-list">
+      <h3>Discussions</h3>
+      <div class="contact">
+        <img src="images/emma.jpg" alt="Emma">
+        <span>Emma_Dream</span>
+      </div>
+      <div class="contact unread">
+        <img src="images/leo.jpg" alt="Leo">
+        <span>Leo92</span>
+      </div>
+      <div class="contact unread">
+        <img src="images/sofia.jpg" alt="Sofia">
+        <span>SofiaSweet</span>
+      </div>
+    </aside>
+
+    <!-- Zone de messagerie -->
+    <main class="messagerie">
+
+      <!-- En-tête de la conversation -->
+      <div class="conversation-header">
+        <div class="avatar">
+          <img src="" alt="Avatar">
+        </div>
+        <div class="pseudo">Discussion avec <strong></strong></div>
+      </div>
+
+      <!-- Messages -->
+      <div class="message received">
+        Salut, comment vas-tu ?
+        <time>12:42</time>
+      </div>
+
+      <div class="message sent">
+        Très bien et toi ?
+        <time>12:44</time>
+      </div>
+
+      <!-- Formulaire d'envoi -->
+      <form class="message-form">
+        <input type="text" placeholder="Écris ton message..." required>
+        <button type="submit">Envoyer pour 5 crédits</button>
+      </form>
+
+    </main>
+
+    <!-- Barre latérale à droite -->
+    <aside class="sidebar-right">
+      <a href="mes-photos.html">Mes Photos</a>
+      <a href="profil.html">Mon Profil</a>
+      <a href="mes-favoris.html">Mes Favoris</a>
+      <a href="membres_bloques.html">Membres Bloqués</a>
+      <a href="achat_credits.html">Acheter Crédits</a>
+    </aside>
+
+  </div>
+
+  <!-- Pied de page -->
+  <footer class="footer">
+    <a href="#">Service Clients</a>
+    <a href="#">CGV</a>
+    <a href="#">Protection des données</a>
+    <a href="#">Mentions légales</a>
+    <a href="#">EN / FR</a>
+    © 2025 Pourflirter. Tous droits réservés.
+  </footer>
+
+  <!-- Script pour charger le bon destinataire -->
+  <script>
+    function getQueryParam(param) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(param);
+    }
+
+    function loadConversation() {
+      const recipientId = getQueryParam('to');
+      if (!recipientId || !localStorage.getItem(recipientId)) {
+        alert("Utilisateur introuvable.");
+        return;
+      }
+
+      const recipientData = JSON.parse(localStorage.getItem(recipientId));
+
+      // Afficher le pseudo
+      document.querySelector('.pseudo strong').textContent = recipientData.username || "Utilisateur";
+
+      // Afficher la photo de profil
+      const avatarImg = document.querySelector('.avatar img');
+      if (recipientData.profilePhoto) {
+        avatarImg.src = recipientData.profilePhoto;
+        avatarImg.alt = recipientData.username;
+      } else {
+        avatarImg.src = "images/utilisateur.jpg"; // image par défaut
+        avatarImg.alt = "Avatar";
+      }
+    }
+
+    loadConversation();
+  </script>
+
+</body>
+</html>

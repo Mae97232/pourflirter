@@ -1,0 +1,276 @@
+/* RESET */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Segoe UI", sans-serif;
+  background-color: #fff;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* HEADER */
+.header {
+  background-color: #2c2c2c;
+  color: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+
+.logo {
+  font-size: 1.5em;
+  font-weight: bold;
+}
+
+/* HEADER CENTER */
+.header-center {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: white;
+  padding: 6px 10px;
+  border-radius: 20px;
+}
+
+.search-bar input {
+  border: none;
+  outline: none;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.9em;
+}
+
+.search-bar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1em;
+}
+
+/* HEADER RIGHT */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.header-links a {
+  color: white;
+  text-decoration: none;
+  margin-left: 15px;
+  font-size: 0.95em;
+  transition: opacity 0.2s ease;
+}
+
+.header-links a:hover {
+  opacity: 0.8;
+}
+
+.user-photo img {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* LAYOUT */
+.layout {
+  display: flex;
+  flex: 1;
+  min-height: calc(100vh - 120px);
+}
+
+/* LEFT SIDEBAR */
+.conversations-list {
+  width: 220px;
+  background-color: #fff;
+  border-right: 1px solid #ddd;
+  padding: 20px 10px;
+}
+
+.conversations-list h3 {
+  margin-bottom: 20px;
+  font-size: 1.1em;
+  font-weight: bold;
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.contact img {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin-right: 10px;
+}
+
+.contact span {
+  font-size: 0.95em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* MAIN MESSAGERIE */
+.messagerie {
+  flex: 1;
+  padding: 25px;
+  display: flex;
+  flex-direction: column;
+  background-color: #fff;
+}
+
+/* Conversation Header */
+.conversation-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 25px;
+}
+
+.conversation-header .avatar img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 15px;
+  border: 2px solid #4285f4;
+}
+
+.pseudo {
+  font-size: 1em;
+}
+
+.pseudo strong {
+  font-weight: bold;
+}
+
+/* Messages */
+.message {
+  max-width: 60%;
+  padding: 12px 16px;
+  border-radius: 15px;
+  margin-bottom: 10px;
+  position: relative;
+  font-size: 0.95em;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.message time {
+  display: block;
+  font-size: 0.75em;
+  margin-top: 6px;
+  opacity: 0.6;
+}
+
+.message.received {
+  background-color: #f2f2f2;
+  align-self: flex-start;
+  border-top-left-radius: 0;
+}
+
+.message.sent {
+  background-color: #f38fb8;
+  color: white;
+  align-self: flex-end;
+  border-top-right-radius: 0;
+}
+
+/* Message form */
+.message-form {
+  display: flex;
+  gap: 10px;
+  margin-top: auto;
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.08);
+  margin-top: 30px;
+}
+
+.message-form input {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 20px;
+  border: 1px solid #ccc;
+  outline: none;
+}
+
+.message-form button {
+  padding: 10px 20px;
+  background-color: #f38fb8;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.message-form button:hover {
+  background-color: #e677a3;
+}
+
+/* === SIDEBAR DROITE === */
+.sidebar-right {
+  width: 220px; /* ✅ Réduit la largeur totale */
+  background-color: #efefef;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-weight: bold;
+  height: fit-content;
+
+  margin-right: 40px; /* ✅ Espace avec le bord droit */
+}
+
+.sidebar-right a {
+  color: #333;
+  text-decoration: none;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.sidebar-right a:hover {
+  background-color: #ddd;
+}
+
+
+/* FOOTER */
+.footer {
+  background-color: #2c2c2c;
+  color: white;
+  padding: 15px 10px;
+  text-align: center;
+  font-size: 0.85em;
+}
+
+.footer a {
+  color: #fff;
+  text-decoration: none;
+  margin: 0 8px;
+}
+
+.footer a:hover {
+  text-decoration: underline;
+}
