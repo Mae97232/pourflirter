@@ -2,47 +2,64 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Pourflirter</title>
+  <title>Pourflirter - Connexion</title>
   <link rel="stylesheet" href="Design/style.css">
   <link rel="icon" href="Image/favicon.ico.jpg" type="image/jpg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+
 <body class="index-page">
 
-  <!-- Header moderne avec logo + navigation -->
   <header class="site-header">
     <div class="header-container">
       <div class="logo">💙 Pourflirter</div>
-
-      <nav class="main-nav">
-        <a href="index.html">Accueil</a>
-        <a href="profil.html">Profil</a>
-        <a href="inscription.html">Inscription</a>
-        <a href="message.html">Messages</a>
-      </nav>
-
-      <div class="auth-links">
-      </div>
+      <div class="auth-links"></div>
     </div>
   </header>
 
-  <!-- Contenu principal -->
   <main>
     <h1>Inscrivez-vous gratuitement ou connectez-vous</h1>
-    <form>
-      <input type="text" placeholder="Pseudo" required>
-      <input type="password" placeholder="Mot de passe" required>
+
+    <form id="login-form">
+      <input type="email" id="email" placeholder="Email" required>
+      <input type="password" id="password" placeholder="Mot de passe" required>
+
       <button type="submit">Connexion</button>
       <a href="inscription.html" class="btn-inscription">S'inscrire</a>
     </form>
   </main>
 
-  <!-- Pied de page -->
   <footer>
     <a href="#">CGV</a> |
     <a href="#">Protection des données</a> |
     <a href="#">Mentions légales</a>
   </footer>
+
+  <script type="module">
+    import { supabase } from "./supabaseClient.js";
+
+    // Si déjà connecté, on envoie direct vers accueil
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      window.location.replace("accueil.html");
+    }
+
+    document.getElementById("login-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        alert("❌ Connexion impossible : " + error.message);
+        return;
+      }
+
+      window.location.replace("accueil.html");
+    });
+  </script>
 
 </body>
 </html>
