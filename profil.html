@@ -109,7 +109,6 @@ function getZodiac(d){
          (m==12&&day>=22)||(m==1&&day<=19)?"Capricorne":
          (m==1&&day>=20)||(m==2&&day<=18)?"Verseau":"Poissons";
 }
-
 function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value ?? "";
@@ -117,15 +116,34 @@ function setText(id, value) {
 
 /* --------- AUTH --------- */
 const { data: { session } } = await supabase.auth.getSession();
-if (!session) {
-  // ta page de connexion c'est index.html
-  window.location.replace("index.html");
-}
-const myId = session.user.id;
+if (!session) window.location.replace("index.html");
 
-// Permet de voir un autre profil via ?user=UUID
+const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
+
+/* --------- SIGNED URL (pour bucket privé) --------- */
+async function getProfilePhotoUrl(photoValue) {
+  // photoValue = soit null, soit "userId/profile.jpg" (chemin)
+  if (!photoValue) return "default.jpg";
+
+  // Si jamais tu as encore des anciennes valeurs en URL http dans la DB
+  if (typeof photoValue === "string" && photoValue.startsWith("http")) {
+    return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
+  }
+
+  const { data, error } = await supabase.storage
+    .from("profile_photos")
+    .createSignedUrl(photoValue, 60 * 60); // 1h
+
+  if (error) {
+    console.error("SignedUrl photo profil:", error);
+    return "default.jpg";
+  }
+
+  // anti-cache
+  return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
 
 /* --------- PROFIL --------- */
 async function loadProfile() {
@@ -140,14 +158,14 @@ async function loadProfile() {
     alert("❌ Profil introuvable ou accès refusé (RLS) : " + error.message);
     return;
   }
-
   if (!user) {
     alert("❌ Aucun profil trouvé pour cet utilisateur.");
     return;
   }
 
   document.getElementById("user-name").textContent = user.username || "";
-  document.getElementById("profile-photo").src = user.photo || "default.jpg";
+  document.getElementById("profile-photo").src = await getProfilePhotoUrl(user.photo);
+
   setText("age", user.birthdate ? (getAge(user.birthdate) + " ans") : "");
   setText("zodiac-sign", user.birthdate ? getZodiac(user.birthdate) : "");
   setText("gender", user.gender || "");
@@ -218,7 +236,7 @@ function uploadGalleryPhoto() {
   i.click();
 }
 
-/* --------- PHOTO PROFIL --------- */
+/* --------- PHOTO PROFIL (bucket privé OK) --------- */
 if (isOwner) {
   document.getElementById("photo-label").onclick = () =>
     document.getElementById("profile-photo-upload").click();
@@ -228,7 +246,7 @@ if (isOwner) {
     if (!file) return;
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${myId}/profile.${ext}`;
+    const path = `${myId}/profile.${ext}`; // même nom => upsert
 
     const { error: upErr } = await supabase.storage
       .from("profile_photos")
@@ -239,13 +257,10 @@ if (isOwner) {
       return;
     }
 
-    const url = supabase.storage
-      .from("profile_photos")
-      .getPublicUrl(path).data.publicUrl;
-
+    // ✅ On stocke le CHEMIN (pas une URL)
     const { error: dbErr } = await supabase
       .from("profiles")
-      .update({ photo: url })
+      .update({ photo: path })
       .eq("id", myId);
 
     if (dbErr) {
@@ -253,7 +268,8 @@ if (isOwner) {
       return;
     }
 
-    document.getElementById("profile-photo").src = url;
+    // ✅ On affiche avec une URL signée + anti-cache
+    document.getElementById("profile-photo").src = await getProfilePhotoUrl(path);
   };
 }
 
@@ -283,3 +299,4 @@ loadProfile();
 
 </body>
 </html>
+
