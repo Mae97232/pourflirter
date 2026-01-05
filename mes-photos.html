@@ -27,11 +27,8 @@
 
     <p id="status"></p>
 
-    <div class="photo-grid" id="photoGrid">
-      <!-- photos injectées ici -->
-    </div>
+    <div class="photo-grid" id="photoGrid"></div>
 
-    <!-- input unique pour upload -->
     <input type="file" id="fileInput" accept="image/*" hidden>
   </main>
 
@@ -44,15 +41,12 @@
   </aside>
 </div>
 
-<footer class="footer">
-  © 2025 Pourflirter
-</footer>
+<footer class="footer">© 2025 Pourflirter</footer>
 
-<!-- SCRIPT SUPABASE -->
 <script type="module">
 import { supabase } from "./supabaseClient.js";
 
-/* ================= AUTH ================= */
+/* AUTH */
 const { data: { session } } = await supabase.auth.getSession();
 if (!session) window.location.replace("index.html");
 const myId = session.user.id;
@@ -61,17 +55,26 @@ const grid = document.getElementById("photoGrid");
 const fileInput = document.getElementById("fileInput");
 const statusEl = document.getElementById("status");
 
-/* ================= UTILS ================= */
-function setStatus(msg) {
-  statusEl.textContent = msg || "";
-}
+function setStatus(msg) { statusEl.textContent = msg || ""; }
 
 function uniqueName(ext) {
   const rnd = crypto.randomUUID?.() || Math.random().toString(16).slice(2);
   return `${Date.now()}_${rnd}.${ext}`;
 }
 
-/* ================= LOAD PHOTOS ================= */
+async function signedUrl(path) {
+  const { data, error } = await supabase.storage
+    .from("user_photos")
+    .createSignedUrl(path, 60 * 60); // 1h
+
+  if (error) {
+    console.error("signedUrl error:", error);
+    return null;
+  }
+  return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+/* LOAD */
 async function loadPhotos() {
   setStatus("Chargement...");
   grid.innerHTML = "";
@@ -82,11 +85,11 @@ async function loadPhotos() {
 
   if (error) {
     console.error(error);
-    setStatus("❌ Erreur lors du chargement");
+    setStatus("❌ Erreur chargement : " + error.message);
     return;
   }
 
-  // Bouton ajouter (tuile)
+  // Tuile ajouter
   const addTile = document.createElement("div");
   addTile.className = "photo-slot";
   addTile.innerHTML = `<div class="photo-placeholder">+ Ajouter une photo</div>`;
@@ -100,16 +103,27 @@ async function loadPhotos() {
 
   setStatus("");
 
-  files.forEach(f => {
-    const path = `${myId}/${f.name}`;
-    const url = supabase.storage
-      .from("user_photos")
-      .getPublicUrl(path).data.publicUrl;
+  // Génère toutes les URLs signées
+  const items = await Promise.all(
+    files.map(async (f) => {
+      const path = `${myId}/${f.name}`;
+      const url = await signedUrl(path);
+      return { path, url };
+    })
+  );
 
+  items.forEach(({ path, url }) => {
     const slot = document.createElement("div");
     slot.className = "photo-slot";
+
+    if (!url) {
+      slot.innerHTML = `<div class="photo-placeholder">Image non accessible</div>`;
+      grid.appendChild(slot);
+      return;
+    }
+
     slot.innerHTML = `
-      <img src="${url}?t=${Date.now()}" class="photo-img" alt="">
+      <img src="${url}" class="photo-img" alt="">
       <button class="delete-photo">Supprimer</button>
     `;
 
@@ -117,12 +131,12 @@ async function loadPhotos() {
       e.stopPropagation();
       if (!confirm("Supprimer cette photo ?")) return;
 
-      const { error } = await supabase.storage
+      const { error: delErr } = await supabase.storage
         .from("user_photos")
         .remove([path]);
 
-      if (error) {
-        alert("❌ Suppression : " + error.message);
+      if (delErr) {
+        alert("❌ Suppression : " + delErr.message);
         return;
       }
       loadPhotos();
@@ -132,7 +146,7 @@ async function loadPhotos() {
   });
 }
 
-/* ================= UPLOAD ================= */
+/* UPLOAD */
 fileInput.addEventListener("change", async (e) => {
   const file = e.target.files[0];
   if (!file) return;
@@ -153,10 +167,10 @@ fileInput.addEventListener("change", async (e) => {
   }
 
   e.target.value = "";
-  loadPhotos();
+  await loadPhotos();
 });
 
-/* ================= LOGOUT ================= */
+/* LOGOUT */
 document.getElementById("logout").onclick = async (e) => {
   e.preventDefault();
   await supabase.auth.signOut();
