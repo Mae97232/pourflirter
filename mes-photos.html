@@ -54,6 +54,16 @@
 <script type="module">
 import { supabase } from "./supabaseClient.js";
 
+/* ✅ FIX: ajuste automatiquement l'espace sous le header (évite recouvrement + évite trop d'espace) */
+function syncHeaderSpace() {
+  const header = document.querySelector(".header");
+  if (!header) return;
+  const h = header.getBoundingClientRect().height;
+  document.documentElement.style.setProperty("--header-h", `${h}px`);
+}
+syncHeaderSpace();
+window.addEventListener("resize", syncHeaderSpace);
+
 /* AUTH */
 const { data: { session } } = await supabase.auth.getSession();
 if (!session) window.location.replace("index.html");

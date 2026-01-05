@@ -660,16 +660,16 @@ body {
 }
 
 /* ===========================================================
-   ✅ FIX BÉTON : rien ne passe sur le header/footer
-   (à coller TOUT EN BAS du fichier)
+   ✅ FIX FINAL PROPRE : le contenu ne recouvre jamais header/footer
+   et ne descend pas trop (hauteur header auto via JS)
    =========================================================== */
 
 :root{
-  --header-h: 80px;   /* ajuste si besoin */
-  --footer-h: 0px;    /* mets 70px si tu veux réserver de la place en bas */
+  --header-h: 70px; /* valeur par défaut (sera remplacée par JS) */
+  --safe-bottom: 30px;
 }
 
-/* Le header est toujours au-dessus */
+/* Header fixe au-dessus */
 .header{
   position: fixed !important;
   top: 0 !important;
@@ -678,34 +678,32 @@ body {
   z-index: 9999 !important;
 }
 
-/* Le body ne centre plus la page (certaines règles plus haut le font) */
+/* Body normal (évite le centrage/padding qui casse le layout) */
 body{
   display: block !important;
-  padding: 0 !important;
   margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* On réserve la place du header (et optionnel footer) */
+/* LAYOUT : on réserve EXACTEMENT la hauteur du header */
 .layout{
   width: 100% !important;
   max-width: none !important;
   margin: 0 !important;
-  padding-top: calc(var(--header-h) + 30px) !important;
-  padding-bottom: calc(var(--footer-h) + 30px) !important;
+  padding-top: calc(var(--header-h) + 20px) !important; /* +20 pour respirer */
+  padding-bottom: var(--safe-bottom) !important;
   align-items: flex-start !important;
 }
 
-/* La grille ne doit JAMAIS être déplacée vers le haut */
+/* La grille reste dans le flux */
 .photo-grid{
   position: relative !important;
-  transform: none !important;
   top: auto !important;
-  margin-top: 20px !important;
+  transform: none !important;
+  margin-top: 0 !important;
 }
 
-/* Si un ancien CSS met des transforms/top sur les slots */
 .photo-slot{
-  position: relative !important;
-  transform: none !important;
   top: auto !important;
+  transform: none !important;
 }
