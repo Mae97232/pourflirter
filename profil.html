@@ -29,7 +29,7 @@
     <section class="section">
       <h3 class="section-title">Mes photos</h3>
       <div id="photo-grid" class="photo-grid"></div>
-      <!-- ✅ Si tu veux un bouton vers la page upload -->
+
       <div style="margin-top:10px;">
         <a href="mes-photos.html" style="text-decoration:underline;">Gérer mes photos</a>
       </div>
@@ -126,7 +126,7 @@ const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
-/* --------- SIGNED URL (bucket privé) --------- */
+/* --------- SIGNED URL (profile_photos bucket privé) --------- */
 async function getProfilePhotoUrl(photoValue) {
   if (!photoValue) return "default.jpg";
 
@@ -142,6 +142,20 @@ async function getProfilePhotoUrl(photoValue) {
   if (error) {
     console.error("SignedUrl photo profil:", error);
     return "default.jpg";
+  }
+
+  return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+/* --------- SIGNED URL (user_photos bucket privé) --------- */
+async function getUserPhotoUrl(path) {
+  const { data, error } = await supabase.storage
+    .from("user_photos")
+    .createSignedUrl(path, 60 * 60);
+
+  if (error) {
+    console.error("SignedUrl user photo:", error);
+    return null;
   }
 
   return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
@@ -186,27 +200,30 @@ async function loadProfile() {
   await loadGallery();
 }
 
-/* --------- GALERIE (LECTURE SEULE) --------- */
+/* --------- GALERIE (LECTURE SEULE, bucket privé OK) --------- */
 async function loadGallery() {
   const { data: files, error } = await supabase.storage
     .from("user_photos")
-    .list(viewedId + "/");
+    .list(viewedId + "/", { limit: 200, sortBy: { column: "name", order: "desc" } });
 
   if (error) console.error("Erreur storage list:", error);
 
   const grid = document.getElementById("photo-grid");
   grid.innerHTML = "";
 
-  files?.forEach(f => {
-    const url = supabase.storage
-      .from("user_photos")
-      .getPublicUrl(`${viewedId}/${f.name}`).data.publicUrl;
+  if (!files || files.length === 0) return;
 
-    // anti-cache
-    grid.innerHTML += `<div class="photo-slot"><img src="${url}?t=${Date.now()}" alt=""></div>`;
+  const items = await Promise.all(
+    files.map(async (f) => {
+      const path = `${viewedId}/${f.name}`;
+      const url = await getUserPhotoUrl(path);
+      return url;
+    })
+  );
+
+  items.filter(Boolean).forEach(url => {
+    grid.innerHTML += `<div class="photo-slot"><img src="${url}" alt=""></div>`;
   });
-
-  // ❌ PLUS DE BOUTON AJOUT ICI
 }
 
 /* --------- PHOTO PROFIL (seulement propriétaire) --------- */
@@ -230,7 +247,6 @@ if (isOwner) {
       return;
     }
 
-    // ✅ on stocke le CHEMIN
     const { error: dbErr } = await supabase
       .from("profiles")
       .update({ photo: path })
@@ -270,4 +286,5 @@ loadProfile();
 
 </body>
 </html>
+
 
