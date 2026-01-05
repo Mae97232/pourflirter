@@ -29,6 +29,10 @@
     <section class="section">
       <h3 class="section-title">Mes photos</h3>
       <div id="photo-grid" class="photo-grid"></div>
+      <!-- ✅ Si tu veux un bouton vers la page upload -->
+      <div style="margin-top:10px;">
+        <a href="mes-photos.html" style="text-decoration:underline;">Gérer mes photos</a>
+      </div>
     </section>
 
     <!-- PROFIL -->
@@ -122,26 +126,24 @@ const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
-/* --------- SIGNED URL (pour bucket privé) --------- */
+/* --------- SIGNED URL (bucket privé) --------- */
 async function getProfilePhotoUrl(photoValue) {
-  // photoValue = soit null, soit "userId/profile.jpg" (chemin)
   if (!photoValue) return "default.jpg";
 
-  // Si jamais tu as encore des anciennes valeurs en URL http dans la DB
+  // compat anciennes valeurs URL
   if (typeof photoValue === "string" && photoValue.startsWith("http")) {
     return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
 
   const { data, error } = await supabase.storage
     .from("profile_photos")
-    .createSignedUrl(photoValue, 60 * 60); // 1h
+    .createSignedUrl(photoValue, 60 * 60);
 
   if (error) {
     console.error("SignedUrl photo profil:", error);
     return "default.jpg";
   }
 
-  // anti-cache
   return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
 }
 
@@ -184,7 +186,7 @@ async function loadProfile() {
   await loadGallery();
 }
 
-/* --------- GALERIE --------- */
+/* --------- GALERIE (LECTURE SEULE) --------- */
 async function loadGallery() {
   const { data: files, error } = await supabase.storage
     .from("user_photos")
@@ -199,44 +201,15 @@ async function loadGallery() {
     const url = supabase.storage
       .from("user_photos")
       .getPublicUrl(`${viewedId}/${f.name}`).data.publicUrl;
-    grid.innerHTML += `<div class="photo-slot"><img src="${url}" alt=""></div>`;
+
+    // anti-cache
+    grid.innerHTML += `<div class="photo-slot"><img src="${url}?t=${Date.now()}" alt=""></div>`;
   });
 
-  if (isOwner) {
-    const add = document.createElement("div");
-    add.className = "photo-slot";
-    add.textContent = "+ Ajouter une photo";
-    add.onclick = uploadGalleryPhoto;
-    grid.appendChild(add);
-  }
+  // ❌ PLUS DE BOUTON AJOUT ICI
 }
 
-/* --------- UPLOAD GALERIE --------- */
-function uploadGalleryPhoto() {
-  const i = document.createElement("input");
-  i.type = "file";
-  i.accept = "image/*";
-  i.onchange = async e => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${myId}/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from("user_photos")
-      .upload(path, file);
-
-    if (error) {
-      alert("❌ Upload galerie : " + error.message);
-      return;
-    }
-    loadGallery();
-  };
-  i.click();
-}
-
-/* --------- PHOTO PROFIL (bucket privé OK) --------- */
+/* --------- PHOTO PROFIL (seulement propriétaire) --------- */
 if (isOwner) {
   document.getElementById("photo-label").onclick = () =>
     document.getElementById("profile-photo-upload").click();
@@ -246,7 +219,7 @@ if (isOwner) {
     if (!file) return;
 
     const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
-    const path = `${myId}/profile.${ext}`; // même nom => upsert
+    const path = `${myId}/profile.${ext}`;
 
     const { error: upErr } = await supabase.storage
       .from("profile_photos")
@@ -257,7 +230,7 @@ if (isOwner) {
       return;
     }
 
-    // ✅ On stocke le CHEMIN (pas une URL)
+    // ✅ on stocke le CHEMIN
     const { error: dbErr } = await supabase
       .from("profiles")
       .update({ photo: path })
@@ -268,7 +241,6 @@ if (isOwner) {
       return;
     }
 
-    // ✅ On affiche avec une URL signée + anti-cache
     document.getElementById("profile-photo").src = await getProfilePhotoUrl(path);
   };
 }
@@ -278,7 +250,6 @@ document.getElementById("radius-select").onchange = async (e) => {
   if (!isOwner) return;
 
   const val = Number(e.target.value);
-
   const { error } = await supabase
     .from("profiles")
     .update({ search_radius: val })
