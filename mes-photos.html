@@ -41,7 +41,7 @@
   </aside>
 </div>
 
-<footer class="footer">
+<footer class="footer" id="siteFooter">
   © 2025 Pourflirter
 </footer>
 
@@ -54,15 +54,22 @@
 <script type="module">
 import { supabase } from "./supabaseClient.js";
 
-/* ✅ FIX: ajuste automatiquement l'espace sous le header (évite recouvrement + évite trop d'espace) */
-function syncHeaderSpace() {
+/* ✅ FIX: espace auto pour header + footer */
+function syncSpaces() {
   const header = document.querySelector(".header");
-  if (!header) return;
-  const h = header.getBoundingClientRect().height;
-  document.documentElement.style.setProperty("--header-h", `${h}px`);
+  const footer = document.getElementById("siteFooter");
+
+  if (header) {
+    const h = header.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--header-h", `${h}px`);
+  }
+  if (footer) {
+    const f = footer.getBoundingClientRect().height;
+    document.documentElement.style.setProperty("--footer-h", `${f}px`);
+  }
 }
-syncHeaderSpace();
-window.addEventListener("resize", syncHeaderSpace);
+syncSpaces();
+window.addEventListener("resize", syncSpaces);
 
 /* AUTH */
 const { data: { session } } = await supabase.auth.getSession();
@@ -165,10 +172,8 @@ async function loadPhotos(){
       <button class="delete-photo" type="button">Supprimer</button>
     `;
 
-    // Click image => zoom
     slot.querySelector(".photo-img").addEventListener("click", () => openModal(url));
 
-    // Supprimer
     slot.querySelector(".delete-photo").addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!confirm("Supprimer cette photo ?")) return;
@@ -186,6 +191,9 @@ async function loadPhotos(){
 
     grid.appendChild(slot);
   });
+
+  // ✅ au cas où le footer change de hauteur (responsive), on resync
+  syncSpaces();
 }
 
 /* UPLOAD */
