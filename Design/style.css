@@ -1,4 +1,37 @@
-/* === GÉNÉNÉRAL === */
+/* ============================================================
+   POURFLIRTER - STYLE.CSS (VERSION PROPRE)
+   - Suppression des doublons qui se contredisent
+   - Header sticky (pas de recouvrement)
+   - Grille photos responsive (cases plus petites + alignées)
+   ============================================================ */
+
+
+/* =========================
+   RESET GLOBAL
+   ========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+
+/* =========================
+   PAGE INDEX (ACCUEIL/LOGIN)
+   ========================= */
 body.index-page {
   margin: 0;
   padding: 0;
@@ -6,7 +39,7 @@ body.index-page {
   background-image: url('../Image/accueil.jpg');
   background-size: cover;
   background-position: center;
-  height: 100vh;
+  min-height: 100vh;
   color: #333;
   position: relative;
 }
@@ -21,12 +54,14 @@ body.index-page::before {
 }
 
 /* Tout le contenu au-dessus du voile */
-header, main, footer {
+body.index-page header,
+body.index-page main,
+body.index-page footer {
   position: relative;
   z-index: 1;
 }
 
-/* === HEADER === */
+/* Header index (si tu l’utilises) */
 .site-header {
   background-color: rgba(51, 51, 51, 0.85);
   color: white;
@@ -34,11 +69,6 @@ header, main, footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.logo {
-  font-size: 28px;
-  font-weight: bold;
 }
 
 .main-nav a {
@@ -52,24 +82,24 @@ header, main, footer {
   text-decoration: underline;
 }
 
-/* === FORMULAIRE ACCUEIL === */
-main {
+/* Formulaire index */
+body.index-page main {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: calc(100vh - 140px);
+  min-height: calc(100vh - 140px);
   text-align: center;
   padding: 20px;
 }
 
-main h1 {
+body.index-page main h1 {
   font-size: 24px;
   margin-bottom: 20px;
   color: #444;
 }
 
-form {
+body.index-page form {
   background-color: white;
   padding: 25px;
   border-radius: 15px;
@@ -81,15 +111,16 @@ form {
   max-width: 350px;
 }
 
-input[type="text"],
-input[type="password"] {
+body.index-page input[type="text"],
+body.index-page input[type="password"],
+body.index-page input[type="email"] {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 16px;
 }
 
-button[type="submit"] {
+body.index-page button[type="submit"] {
   background-color: #ff69b4;
   color: white;
   border: none;
@@ -100,7 +131,7 @@ button[type="submit"] {
   transition: background 0.3s;
 }
 
-button[type="submit"]:hover {
+body.index-page button[type="submit"]:hover {
   background-color: #ff1493;
 }
 
@@ -120,53 +151,44 @@ button[type="submit"]:hover {
   background-color: #6a5acd;
 }
 
-/* === FOOTER === */
-footer {
+/* Footer index */
+body.index-page footer {
   background-color: rgba(51, 51, 51, 0.9);
   color: white;
   text-align: center;
   padding: 15px;
   font-size: 14px;
-  position: relative;
-  z-index: 1;
 }
 
-footer a {
+body.index-page footer a {
   color: #ddd;
   text-decoration: none;
   margin: 0 5px;
 }
 
-footer a:hover {
+body.index-page footer a:hover {
   text-decoration: underline;
 }
 
-/* === RESET DE BASE === */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
 
-body {
-  font-family: Arial, sans-serif;
-  background-color: #fff;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* === HEADER === */
+/* =========================
+   HEADER APP (PAGES CONNECTÉES)
+   ========================= */
 .header {
   width: 100%;
-  background-color: rgba(51, 51, 51, 0.9);
+  background-color: rgba(51, 51, 51, 0.95);
   color: white;
   padding: 15px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+
+  /* IMPORTANT : sticky garde le header visible
+     MAIS il reste dans le flux => pas de recouvrement */
+  position: sticky;
+  top: 0;
+  z-index: 2000;
 }
 
 .logo {
@@ -186,7 +208,7 @@ body {
   border: none;
   border-radius: 20px 0 0 20px;
   font-size: 14px;
-  width: 200px;
+  width: 220px;
 }
 
 .search-bar button {
@@ -213,32 +235,62 @@ body {
   text-decoration: underline;
 }
 
-/* === LAYOUT PRINCIPAL === */
+
+/* =========================
+   LAYOUT APP (COMMUN)
+   ========================= */
 .layout {
+  width: 100%;
   display: flex;
-  flex: 1;
+  justify-content: space-between;
+  align-items: flex-start;
   gap: 20px;
   padding: 30px;
-  flex-wrap: wrap;
 }
 
-/* === MAIN CONTENT AVEC SECTIONS === */
 .main-content {
   flex: 3;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: flex-start;
+  min-width: 280px;
 }
 
-/* === SECTION STYLE === */
+.sidebar-right {
+  width: 250px;
+  background-color: #f2f2f2;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  height: fit-content;
+}
+
+.sidebar-right a {
+  display: block;
+  color: #333;
+  text-decoration: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: bold;
+  margin-bottom: 8px;
+  transition: background-color 0.2s;
+}
+
+.sidebar-right a:hover {
+  background-color: #ddd;
+}
+
+.sidebar-right a.active {
+  background-color: #ddd;
+}
+
+
+/* =========================
+   SECTIONS (PROFIL / ACCUEIL)
+   ========================= */
 .section {
-  flex: 1;
-  min-width: 280px;
   background-color: #f9f9f9;
   padding: 15px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
 }
 
 .section-title {
@@ -248,12 +300,6 @@ body {
   margin-bottom: 10px;
   border-bottom: 2px solid #ddd;
   padding-bottom: 5px;
-}
-
-.profile-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
 }
 
 .profile-card {
@@ -266,41 +312,21 @@ body {
   font-weight: 500;
 }
 
-/* === SIDEBAR DROITE === */
-.sidebar-right {
-  flex: 1;
-  min-width: 200px;
-  background-color: #efefef;
-  padding: 20px;
-  border-radius: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  font-weight: bold;
-  height: fit-content;
-}
 
-.sidebar-right a {
-  color: #333;
-  text-decoration: none;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.3s;
-}
-
-.sidebar-right a:hover {
-  background-color: #ddd;
-}
-
-/* === FOOTER === */
+/* =========================
+   FOOTER APP
+   ========================= */
 .footer {
   width: 100%;
-  background-color: rgba(51, 51, 51, 0.9);
+  background-color: rgba(51, 51, 51, 0.95);
   color: white;
   text-align: center;
-  padding: 20px 15px;
+  padding: 18px 15px;
   font-size: 14px;
+
+  /* reste en bas de page si peu de contenu */
   margin-top: auto;
+
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -316,52 +342,10 @@ body {
   text-decoration: underline;
 }
 
-/* === RESPONSIVE === */
-@media (max-width: 900px) {
-  .layout {
-    flex-direction: column;
-  }
 
-  .main-content {
-    flex-direction: column;
-  }
-
-  .section {
-    width: 100%;
-  }
-
-  .sidebar-right {
-    width: 100%;
-  }
-
-  .search-bar {
-    order: 2;
-    justify-content: center;
-    margin: 10px 0;
-  }
-
-  .nav-links {
-    order: 3;
-    justify-content: center;
-    width: 100%;
-  }
-}
-
-/* Reset basique */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-}
-
-body {
-  background-color: white;
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
+/* =========================
+   FORMULAIRES (INSCRIPTION, ETC.)
+   ========================= */
 form {
   width: 100%;
   max-width: 400px;
@@ -370,7 +354,6 @@ form {
   gap: 15px;
 }
 
-/* Champs de formulaire */
 input,
 select,
 button {
@@ -380,13 +363,11 @@ button {
   border-radius: 5px;
 }
 
-/* Libellés */
 label {
   font-weight: bold;
   margin-top: 10px;
 }
 
-/* Case à cocher + CGV */
 .checkbox-container {
   display: flex;
   align-items: flex-start;
@@ -394,7 +375,6 @@ label {
   font-size: 14px;
 }
 
-/* Bouton de soumission */
 button {
   background-color: #007bff;
   color: white;
@@ -408,58 +388,9 @@ button:hover {
 }
 
 
-/* Enlève le centrage général */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-}
-
-/* HEADER + FOOTER sur toute la largeur */
-.header, .footer {
-  width: 100%;
-  padding: 15px 30px;
-  background-color: #333;
-  color: white;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-/* Pour que tout le layout remplisse bien l'écran */
-.layout {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 40px 30px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-
-
-/* Sidebar vraiment à droite */
-.sidebar-right {
-  width: 250px;
-  background-color: #f2f2f2;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-left: 40px;
-}
-
-
-.main-content {
-  flex: 3;
-}
-
-.page-title {
-  font-size: 28px;
-  margin-bottom: 20px;
-  color: #222;
-}
-
-/* MEMBRES BLOQUÉS */
+/* =========================
+   MEMBRES BLOQUÉS
+   ========================= */
 .blocked-list {
   display: flex;
   flex-direction: column;
@@ -516,81 +447,89 @@ body {
   background-color: #c82333;
 }
 
-.layout {
-      display: flex;
-      padding: 30px;
-      max-width: 1200px;
-      margin: auto;
-    }
 
-    .main-content {
-      flex: 3;
-    }
+/* =========================
+   PHOTOS - GRILLE (MES-PHOTOS + PROFIL)
+   ✅ Cases plus petites + alignées
+   ========================= */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+  width: 100%;
+  margin-top: 16px;
+}
 
-    .main-content h2 {
-      font-size: 24px;
-      margin-bottom: 20px;
-      color: #333;
-    }
+.photo-slot {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background: #fff;
+  border: 2px dashed #aaa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
 
-    .photo-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 20px;
-    }
+.photo-slot:hover {
+  border-color: #0077cc;
+}
 
-    .photo-slot {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background-color: #fff;
-      border: 2px dashed #aaa;
-      border-radius: 10px;
-      overflow: hidden;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: border-color 0.3s;
-    }
+.photo-placeholder {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  pointer-events: none;
+}
 
-    .photo-slot:hover {
-      border-color: #0077cc;
-    }
-
-    .photo-placeholder {
-      font-size: 18px;
-      color: #555;
-      text-align: center;
-      pointer-events: none;
-    }
-
-    .photo-input {
-      display: none;
-    }
-
-    .photo-slot img {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-
-/* Empêche la grille de "déborder" sur header/footer */
-.layout { align-items: flex-start; }
-.main-content { min-height: 0; }
-.photo-grid { display: grid; gap: 16px; }
-
-/* Images dans les slots */
-.photo-slot { position: relative; overflow: hidden; }
-.photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-img,
+.photo-slot img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border: 0;
+}
 
 /* Bouton supprimer */
-.delete-photo { position: absolute; top: 10px; right: 10px; z-index: 2; }
+.delete-photo {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  background: #0d6efd;
+  color: white;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
 
-/* Modal zoom */
+.delete-photo:hover {
+  opacity: 0.9;
+}
+
+/* Tuile ajouter */
+.photo-add {
+  border-style: dashed;
+  background: #fff;
+}
+
+/* Status */
+.status {
+  margin-top: 10px;
+  color: #444;
+}
+
+
+/* =========================
+   MODAL ZOOM PHOTO
+   ========================= */
 .photo-modal {
   position: fixed;
   inset: 0;
@@ -600,11 +539,15 @@ body {
   justify-content: center;
   z-index: 9999;
 }
-.photo-modal.open { display: flex; }
+
+.photo-modal.open {
+  display: flex;
+}
 
 .photo-modal-img {
   max-width: 90vw;
   max-height: 90vh;
+  border-radius: 10px;
 }
 
 .photo-modal-close {
@@ -612,123 +555,40 @@ body {
   top: 18px;
   right: 18px;
   z-index: 10000;
+  background: #fff;
+  color: #000;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 12px;
+  cursor: pointer;
 }
 
-/* ===========================================================
-   ✅ AJOUT FIX FINAL (NE SUPPRIME RIEN, ÉCRASE JUSTE À LA FIN)
-   Objectif: pas de chevauchement header/footer + layout full width
-   =========================================================== */
 
-/* IMPORTANT: tu avais un body { justify-content:center; padding:40px 20px; }
-   Ça centre tout et peut faire remonter le contenu.
-   On force le body de tes pages app à être en colonne pleine largeur. */
-body {
-  justify-content: flex-start;
-  padding: 0;
-}
+/* =========================
+   RESPONSIVE
+   ========================= */
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+    padding: 20px;
+  }
 
-/* Ton header doit rester au-dessus et ne pas être recouvert */
-.header {
-  position: sticky;
-  top: 0;
-  z-index: 2000;
-}
+  .sidebar-right {
+    width: 100%;
+  }
 
-/* Le layout ne doit PAS être "max-width:1200px; margin:auto" ici */
-.layout {
-  max-width: none;
-  margin: 0;
-  width: 100%;
-  align-items: flex-start;
-}
+  .nav-links {
+    justify-content: center;
+    width: 100%;
+  }
 
-/* On garantit que le contenu commence bien sous le header */
-.main-content {
-  align-self: stretch;
-}
+  .search-bar {
+    order: 2;
+    width: 100%;
+    justify-content: center;
+  }
 
-/* La grille ne doit pas remonter */
-.photo-grid {
-  position: relative;
-  margin-top: 20px;
-  clear: both;
-}
-
-.photo-slot {
-  top: auto;
-  transform: none;
-}
-
-/* ===========================================================
-   ✅ FIX FINAL PROPRE : le contenu ne recouvre jamais header/footer
-   et ne descend pas trop (hauteur header auto via JS)
-   =========================================================== */
-
-:root{
-  --header-h: 70px; /* valeur par défaut (sera remplacée par JS) */
-  --safe-bottom: 30px;
-}
-
-/* Header fixe au-dessus */
-.header{
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 9999 !important;
-}
-
-/* Body normal (évite le centrage/padding qui casse le layout) */
-body{
-  display: block !important;
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-/* LAYOUT : on réserve EXACTEMENT la hauteur du header */
-.layout{
-  width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding-top: calc(var(--header-h) + 20px) !important; /* +20 pour respirer */
-  padding-bottom: var(--safe-bottom) !important;
-  align-items: flex-start !important;
-}
-
-/* La grille reste dans le flux */
-.photo-grid{
-  position: relative !important;
-  top: auto !important;
-  transform: none !important;
-  margin-top: 0 !important;
-}
-
-.photo-slot{
-  top: auto !important;
-  transform: none !important;
-}
- 
-:root{
-  --header-h: 70px;
-  --footer-h: 60px;
-}
-
-/* header fixé */
-.header{
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  z-index: 9999 !important;
-}
-
-/* footer (si ton CSS le rend sticky/fixed, on garde la protection) */
-.footer{
-  z-index: 9999 !important;
-}
-
-/* réserve la place du header + footer */
-.layout{
-  padding-top: calc(var(--header-h) + 20px) !important;
-  padding-bottom: calc(var(--footer-h) + 20px) !important;
+  .photo-grid {
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  }
 }
