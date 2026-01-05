@@ -724,3 +724,37 @@ body {
     grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
   }
 }
+
+/* ===========================================================
+   ✅ DERNIER FIX (POUSSE VRAIMENT LA SIDEBAR À DROITE)
+   - la sidebar ne reste plus "au milieu"
+   - la grille ne passe plus dessous
+   (ce bloc doit rester TOUT EN BAS)
+   =========================================================== */
+
+.layout{
+  max-width: 1400px !important;  /* plus large pour que la sidebar ait de la place */
+  margin: 0 auto !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+}
+
+.sidebar-right{
+  margin-left: auto !important;  /* ✅ pousse la sidebar complètement à droite */
+  flex: 0 0 320px !important;
+  width: 320px !important;
+  min-width: 320px !important;
+  z-index: 50 !important;
+}
+
+.main-content{
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+.photo-grid{
+  width: 100% !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+}
