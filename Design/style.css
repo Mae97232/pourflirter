@@ -726,35 +726,63 @@ body {
 }
 
 /* ===========================================================
-   ✅ DERNIER FIX (POUSSE VRAIMENT LA SIDEBAR À DROITE)
-   - la sidebar ne reste plus "au milieu"
-   - la grille ne passe plus dessous
-   (ce bloc doit rester TOUT EN BAS)
+   ✅ DERNIER FIX (PRIORITÉ MAX) :
+   ➜ Réserve la place de la sidebar pour que la grid ne passe JAMAIS dessous
    =========================================================== */
 
+:root{
+  --sidebar-w: 320px;
+  --layout-gap: 30px;
+}
+
 .layout{
-  max-width: 1400px !important;  /* plus large pour que la sidebar ait de la place */
-  margin: 0 auto !important;
+  max-width: 1400px !important;
   width: 100% !important;
+  margin: 0 auto !important;
+
   display: flex !important;
   flex-wrap: nowrap !important;
+  gap: var(--layout-gap) !important;
   align-items: flex-start !important;
 }
 
-.sidebar-right{
-  margin-left: auto !important;  /* ✅ pousse la sidebar complètement à droite */
-  flex: 0 0 320px !important;
-  width: 320px !important;
-  min-width: 320px !important;
-  z-index: 50 !important;
-}
-
+/* le main a une largeur MAX, donc il ne peut pas passer sous la sidebar */
 .main-content{
   flex: 1 1 auto !important;
   min-width: 0 !important;
+  max-width: calc(100% - var(--sidebar-w) - var(--layout-gap)) !important;
 }
 
+/* sidebar complètement à droite, largeur fixe */
+.sidebar-right{
+  margin-left: auto !important;
+  flex: 0 0 var(--sidebar-w) !important;
+  width: var(--sidebar-w) !important;
+  min-width: var(--sidebar-w) !important;
+
+  position: sticky !important;
+  top: 110px !important;
+  z-index: 50 !important;
+  align-self: flex-start !important;
+}
+
+/* grid bloquée dans le main */
 .photo-grid{
   width: 100% !important;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
+  max-width: 100% !important;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+  gap: 14px !important;
+}
+
+@media (max-width: 900px){
+  .layout{ flex-wrap: wrap !important; }
+  .main-content{ max-width: 100% !important; }
+  .sidebar-right{
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    margin-left: 0 !important;
+    top: auto !important;
+  }
 }
