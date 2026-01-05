@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <title>Mes Photos - Pourflirter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="Design/style.css">
 </head>
 <body>
@@ -24,35 +25,14 @@
   <main class="main-content">
     <h2>Mes Photos</h2>
 
+    <p id="status"></p>
+
     <div class="photo-grid" id="photoGrid">
-
-      <!-- 6 cases FIXES -->
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-      <div class="photo-slot">
-        <input type="file" accept="image/*" class="photo-input">
-        <div class="photo-placeholder">+ Ajouter une photo</div>
-      </div>
-
+      <!-- photos injectées ici -->
     </div>
+
+    <!-- input unique pour upload -->
+    <input type="file" id="fileInput" accept="image/*" hidden>
   </main>
 
   <aside class="sidebar-right">
@@ -70,78 +50,117 @@
 
 <!-- SCRIPT SUPABASE -->
 <script type="module">
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+import { supabase } from "./supabaseClient.js";
 
-const supabase = createClient(
-  "YOUR_SUPABASE_URL",
-  "YOUR_SUPABASE_ANON_KEY"
-);
+/* ================= AUTH ================= */
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) window.location.replace("index.html");
+const myId = session.user.id;
 
-// utilisateur connecté
-const { data: auth } = await supabase.auth.getUser();
-if (!auth.user) window.location.href = "login.html";
-const myId = auth.user.id;
+const grid = document.getElementById("photoGrid");
+const fileInput = document.getElementById("fileInput");
+const statusEl = document.getElementById("status");
 
-const slots = document.querySelectorAll(".photo-slot");
-const MAX_PHOTOS = 6;
+/* ================= UTILS ================= */
+function setStatus(msg) {
+  statusEl.textContent = msg || "";
+}
 
-// =======================
-// CHARGER LES PHOTOS
-// =======================
+function uniqueName(ext) {
+  const rnd = crypto.randomUUID?.() || Math.random().toString(16).slice(2);
+  return `${Date.now()}_${rnd}.${ext}`;
+}
+
+/* ================= LOAD PHOTOS ================= */
 async function loadPhotos() {
-  const { data: files } = await supabase.storage
+  setStatus("Chargement...");
+  grid.innerHTML = "";
+
+  const { data: files, error } = await supabase.storage
     .from("user_photos")
-    .list(myId + "/", { limit: MAX_PHOTOS });
+    .list(myId + "/", { limit: 200, sortBy: { column: "name", order: "desc" } });
 
-  slots.forEach((slot, index) => {
-    const input = slot.querySelector(".photo-input");
+  if (error) {
+    console.error(error);
+    setStatus("❌ Erreur lors du chargement");
+    return;
+  }
 
-    // reset visuel
+  // Bouton ajouter (tuile)
+  const addTile = document.createElement("div");
+  addTile.className = "photo-slot";
+  addTile.innerHTML = `<div class="photo-placeholder">+ Ajouter une photo</div>`;
+  addTile.onclick = () => fileInput.click();
+  grid.appendChild(addTile);
+
+  if (!files || files.length === 0) {
+    setStatus("Aucune photo pour le moment.");
+    return;
+  }
+
+  setStatus("");
+
+  files.forEach(f => {
+    const path = `${myId}/${f.name}`;
+    const url = supabase.storage
+      .from("user_photos")
+      .getPublicUrl(path).data.publicUrl;
+
+    const slot = document.createElement("div");
+    slot.className = "photo-slot";
     slot.innerHTML = `
-      <input type="file" accept="image/*" class="photo-input">
-      <div class="photo-placeholder">+ Ajouter une photo</div>
+      <img src="${url}?t=${Date.now()}" class="photo-img" alt="">
+      <button class="delete-photo">Supprimer</button>
     `;
 
-    const newInput = slot.querySelector(".photo-input");
+    slot.querySelector(".delete-photo").onclick = async (e) => {
+      e.stopPropagation();
+      if (!confirm("Supprimer cette photo ?")) return;
 
-    // photo existante
-    if (files && files[index]) {
-      const { data } = supabase.storage
+      const { error } = await supabase.storage
         .from("user_photos")
-        .getPublicUrl(`${myId}/${files[index].name}`);
+        .remove([path]);
 
-      slot.innerHTML = `<img src="${data.publicUrl}" class="photo-img">`;
-    }
-
-    // clic = upload
-    slot.onclick = () => newInput.click();
-
-    newInput.onchange = (e) => {
-      const file = e.target.files[0];
-      if (file) uploadPhoto(file, index);
+      if (error) {
+        alert("❌ Suppression : " + error.message);
+        return;
+      }
+      loadPhotos();
     };
+
+    grid.appendChild(slot);
   });
 }
 
-// =======================
-// UPLOAD PHOTO
-// =======================
-async function uploadPhoto(file, index) {
-  const fileName = `${myId}/${index}.jpg`;
+/* ================= UPLOAD ================= */
+fileInput.addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-  await supabase.storage
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+  const path = `${myId}/${uniqueName(ext)}`;
+
+  setStatus("Upload en cours...");
+
+  const { error } = await supabase.storage
     .from("user_photos")
-    .upload(fileName, file, { upsert: true });
+    .upload(path, file);
 
+  if (error) {
+    alert("❌ Upload : " + error.message);
+    setStatus("");
+    return;
+  }
+
+  e.target.value = "";
   loadPhotos();
-}
+});
 
-// =======================
-// LOGOUT
-// =======================
-document.getElementById("logout").onclick = async () => {
+/* ================= LOGOUT ================= */
+document.getElementById("logout").onclick = async (e) => {
+  e.preventDefault();
   await supabase.auth.signOut();
-  window.location.href = "login.html";
+  window.location.replace("index.html");
 };
 
 loadPhotos();
