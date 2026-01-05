@@ -1,4 +1,4 @@
-/* === GÉNÉRAL === */
+/* === GÉNÉNÉRAL === */
 body.index-page {
   margin: 0;
   padding: 0;
@@ -577,8 +577,8 @@ body {
       object-fit: cover;
     }
 
-    
-    /* Empêche la grille de "déborder" sur header/footer */
+
+/* Empêche la grille de "déborder" sur header/footer */
 .layout { align-items: flex-start; }
 .main-content { min-height: 0; }
 .photo-grid { display: grid; gap: 16px; }
@@ -612,4 +612,49 @@ body {
   top: 18px;
   right: 18px;
   z-index: 10000;
+}
+
+/* ===========================================================
+   ✅ AJOUT FIX FINAL (NE SUPPRIME RIEN, ÉCRASE JUSTE À LA FIN)
+   Objectif: pas de chevauchement header/footer + layout full width
+   =========================================================== */
+
+/* IMPORTANT: tu avais un body { justify-content:center; padding:40px 20px; }
+   Ça centre tout et peut faire remonter le contenu.
+   On force le body de tes pages app à être en colonne pleine largeur. */
+body {
+  justify-content: flex-start;
+  padding: 0;
+}
+
+/* Ton header doit rester au-dessus et ne pas être recouvert */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+}
+
+/* Le layout ne doit PAS être "max-width:1200px; margin:auto" ici */
+.layout {
+  max-width: none;
+  margin: 0;
+  width: 100%;
+  align-items: flex-start;
+}
+
+/* On garantit que le contenu commence bien sous le header */
+.main-content {
+  align-self: stretch;
+}
+
+/* La grille ne doit pas remonter */
+.photo-grid {
+  position: relative;
+  margin-top: 20px;
+  clear: both;
+}
+
+.photo-slot {
+  top: auto;
+  transform: none;
 }
