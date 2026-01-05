@@ -1,37 +1,4 @@
-/* ============================================================
-   POURFLIRTER - STYLE.CSS (VERSION PROPRE)
-   - Suppression des doublons qui se contredisent
-   - Header sticky (pas de recouvrement)
-   - Grille photos responsive (cases plus petites + alignées)
-   ============================================================ */
-
-
-/* =========================
-   RESET GLOBAL
-   ========================= */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-html, body {
-  height: 100%;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #fff;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-
-/* =========================
-   PAGE INDEX (ACCUEIL/LOGIN)
-   ========================= */
+/* === GÉNÉNÉRAL === */
 body.index-page {
   margin: 0;
   padding: 0;
@@ -39,7 +6,7 @@ body.index-page {
   background-image: url('../Image/accueil.jpg');
   background-size: cover;
   background-position: center;
-  min-height: 100vh;
+  height: 100vh;
   color: #333;
   position: relative;
 }
@@ -54,14 +21,12 @@ body.index-page::before {
 }
 
 /* Tout le contenu au-dessus du voile */
-body.index-page header,
-body.index-page main,
-body.index-page footer {
+header, main, footer {
   position: relative;
   z-index: 1;
 }
 
-/* Header index (si tu l’utilises) */
+/* === HEADER === */
 .site-header {
   background-color: rgba(51, 51, 51, 0.85);
   color: white;
@@ -69,6 +34,11 @@ body.index-page footer {
   display: flex;
   justify-content: space-between;
   align-items: center;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: bold;
 }
 
 .main-nav a {
@@ -82,24 +52,24 @@ body.index-page footer {
   text-decoration: underline;
 }
 
-/* Formulaire index */
-body.index-page main {
+/* === FORMULAIRE ACCUEIL === */
+main {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 140px);
+  height: calc(100vh - 140px);
   text-align: center;
   padding: 20px;
 }
 
-body.index-page main h1 {
+main h1 {
   font-size: 24px;
   margin-bottom: 20px;
   color: #444;
 }
 
-body.index-page form {
+form {
   background-color: white;
   padding: 25px;
   border-radius: 15px;
@@ -111,16 +81,15 @@ body.index-page form {
   max-width: 350px;
 }
 
-body.index-page input[type="text"],
-body.index-page input[type="password"],
-body.index-page input[type="email"] {
+input[type="text"],
+input[type="password"] {
   padding: 10px;
   border-radius: 10px;
   border: 1px solid #ccc;
   font-size: 16px;
 }
 
-body.index-page button[type="submit"] {
+button[type="submit"] {
   background-color: #ff69b4;
   color: white;
   border: none;
@@ -131,7 +100,7 @@ body.index-page button[type="submit"] {
   transition: background 0.3s;
 }
 
-body.index-page button[type="submit"]:hover {
+button[type="submit"]:hover {
   background-color: #ff1493;
 }
 
@@ -151,44 +120,53 @@ body.index-page button[type="submit"]:hover {
   background-color: #6a5acd;
 }
 
-/* Footer index */
-body.index-page footer {
+/* === FOOTER === */
+footer {
   background-color: rgba(51, 51, 51, 0.9);
   color: white;
   text-align: center;
   padding: 15px;
   font-size: 14px;
+  position: relative;
+  z-index: 1;
 }
 
-body.index-page footer a {
+footer a {
   color: #ddd;
   text-decoration: none;
   margin: 0 5px;
 }
 
-body.index-page footer a:hover {
+footer a:hover {
   text-decoration: underline;
 }
 
+/* === RESET DE BASE === */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-/* =========================
-   HEADER APP (PAGES CONNECTÉES)
-   ========================= */
+body {
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === HEADER === */
 .header {
   width: 100%;
-  background-color: rgba(51, 51, 51, 0.95);
+  background-color: rgba(51, 51, 51, 0.9);
   color: white;
   padding: 15px 30px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
-
-  /* IMPORTANT : sticky garde le header visible
-     MAIS il reste dans le flux => pas de recouvrement */
-  position: sticky;
-  top: 0;
-  z-index: 2000;
 }
 
 .logo {
@@ -208,7 +186,7 @@ body.index-page footer a:hover {
   border: none;
   border-radius: 20px 0 0 20px;
   font-size: 14px;
-  width: 220px;
+  width: 200px;
 }
 
 .search-bar button {
@@ -235,62 +213,32 @@ body.index-page footer a:hover {
   text-decoration: underline;
 }
 
-
-/* =========================
-   LAYOUT APP (COMMUN)
-   ========================= */
+/* === LAYOUT PRINCIPAL === */
 .layout {
-  width: 100%;
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  flex: 1;
   gap: 20px;
   padding: 30px;
+  flex-wrap: wrap;
 }
 
+/* === MAIN CONTENT AVEC SECTIONS === */
 .main-content {
   flex: 3;
-  min-width: 280px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
 }
 
-.sidebar-right {
-  width: 250px;
-  background-color: #f2f2f2;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  height: fit-content;
-}
-
-.sidebar-right a {
-  display: block;
-  color: #333;
-  text-decoration: none;
-  padding: 10px;
-  border-radius: 8px;
-  font-weight: bold;
-  margin-bottom: 8px;
-  transition: background-color 0.2s;
-}
-
-.sidebar-right a:hover {
-  background-color: #ddd;
-}
-
-.sidebar-right a.active {
-  background-color: #ddd;
-}
-
-
-/* =========================
-   SECTIONS (PROFIL / ACCUEIL)
-   ========================= */
+/* === SECTION STYLE === */
 .section {
+  flex: 1;
+  min-width: 280px;
   background-color: #f9f9f9;
   padding: 15px;
   border-radius: 10px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  margin-bottom: 20px;
 }
 
 .section-title {
@@ -300,6 +248,12 @@ body.index-page footer a:hover {
   margin-bottom: 10px;
   border-bottom: 2px solid #ddd;
   padding-bottom: 5px;
+}
+
+.profile-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .profile-card {
@@ -312,21 +266,41 @@ body.index-page footer a:hover {
   font-weight: 500;
 }
 
+/* === SIDEBAR DROITE === */
+.sidebar-right {
+  flex: 1;
+  min-width: 200px;
+  background-color: #efefef;
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-weight: bold;
+  height: fit-content;
+}
 
-/* =========================
-   FOOTER APP
-   ========================= */
+.sidebar-right a {
+  color: #333;
+  text-decoration: none;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.sidebar-right a:hover {
+  background-color: #ddd;
+}
+
+/* === FOOTER === */
 .footer {
   width: 100%;
-  background-color: rgba(51, 51, 51, 0.95);
+  background-color: rgba(51, 51, 51, 0.9);
   color: white;
   text-align: center;
-  padding: 18px 15px;
+  padding: 20px 15px;
   font-size: 14px;
-
-  /* reste en bas de page si peu de contenu */
   margin-top: auto;
-
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -342,10 +316,52 @@ body.index-page footer a:hover {
   text-decoration: underline;
 }
 
+/* === RESPONSIVE === */
+@media (max-width: 900px) {
+  .layout {
+    flex-direction: column;
+  }
 
-/* =========================
-   FORMULAIRES (INSCRIPTION, ETC.)
-   ========================= */
+  .main-content {
+    flex-direction: column;
+  }
+
+  .section {
+    width: 100%;
+  }
+
+  .sidebar-right {
+    width: 100%;
+  }
+
+  .search-bar {
+    order: 2;
+    justify-content: center;
+    margin: 10px 0;
+  }
+
+  .nav-links {
+    order: 3;
+    justify-content: center;
+    width: 100%;
+  }
+}
+
+/* Reset basique */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background-color: white;
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
 form {
   width: 100%;
   max-width: 400px;
@@ -354,6 +370,7 @@ form {
   gap: 15px;
 }
 
+/* Champs de formulaire */
 input,
 select,
 button {
@@ -363,11 +380,13 @@ button {
   border-radius: 5px;
 }
 
+/* Libellés */
 label {
   font-weight: bold;
   margin-top: 10px;
 }
 
+/* Case à cocher + CGV */
 .checkbox-container {
   display: flex;
   align-items: flex-start;
@@ -375,6 +394,7 @@ label {
   font-size: 14px;
 }
 
+/* Bouton de soumission */
 button {
   background-color: #007bff;
   color: white;
@@ -387,10 +407,55 @@ button:hover {
   background-color: #0056b3;
 }
 
+/* Enlève le centrage général */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: Arial, sans-serif;
+}
 
-/* =========================
-   MEMBRES BLOQUÉS
-   ========================= */
+/* HEADER + FOOTER sur toute la largeur */
+.header, .footer {
+  width: 100%;
+  padding: 15px 30px;
+  background-color: #333;
+  color: white;
+  display: flex;
+  align-items: center;
+  box-sizing: border-box;
+}
+
+/* Pour que tout le layout remplisse bien l'écran */
+.layout {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 40px 30px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Sidebar vraiment à droite */
+.sidebar-right {
+  width: 250px;
+  background-color: #f2f2f2;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-left: 40px;
+}
+
+.main-content {
+  flex: 3;
+}
+
+.page-title {
+  font-size: 28px;
+  margin-bottom: 20px;
+  color: #222;
+}
+
+/* MEMBRES BLOQUÉS */
 .blocked-list {
   display: flex;
   flex-direction: column;
@@ -447,32 +512,42 @@ button:hover {
   background-color: #c82333;
 }
 
+.layout {
+  display: flex;
+  padding: 30px;
+  max-width: 1200px;
+  margin: auto;
+}
 
-/* =========================
-   PHOTOS - GRILLE (MES-PHOTOS + PROFIL)
-   ✅ Cases plus petites + alignées
-   ========================= */
+.main-content {
+  flex: 3;
+}
+
+.main-content h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+}
+
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
-  width: 100%;
-  margin-top: 16px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
 }
 
 .photo-slot {
+  position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  border-radius: 12px;
-  overflow: hidden;
-  position: relative;
-  background: #fff;
+  background-color: #fff;
   border: 2px dashed #aaa;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: border-color 0.2s;
+  transition: border-color 0.3s;
 }
 
 .photo-slot:hover {
@@ -480,56 +555,37 @@ button:hover {
 }
 
 .photo-placeholder {
-  font-size: 14px;
+  font-size: 18px;
   color: #555;
   text-align: center;
   pointer-events: none;
 }
 
-.photo-img,
+.photo-input {
+  display: none;
+}
+
 .photo-slot img {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
-  border: 0;
 }
+
+/* Empêche la grille de "déborder" sur header/footer */
+.layout { align-items: flex-start; }
+.main-content { min-height: 0; }
+.photo-grid { display: grid; gap: 16px; }
+
+/* Images dans les slots */
+.photo-slot { position: relative; overflow: hidden; }
+.photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* Bouton supprimer */
-.delete-photo {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 3;
-  background: #0d6efd;
-  color: white;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 8px;
-  font-size: 13px;
-  cursor: pointer;
-}
+.delete-photo { position: absolute; top: 10px; right: 10px; z-index: 2; }
 
-.delete-photo:hover {
-  opacity: 0.9;
-}
-
-/* Tuile ajouter */
-.photo-add {
-  border-style: dashed;
-  background: #fff;
-}
-
-/* Status */
-.status {
-  margin-top: 10px;
-  color: #444;
-}
-
-
-/* =========================
-   MODAL ZOOM PHOTO
-   ========================= */
+/* Modal zoom */
 .photo-modal {
   position: fixed;
   inset: 0;
@@ -539,15 +595,11 @@ button:hover {
   justify-content: center;
   z-index: 9999;
 }
-
-.photo-modal.open {
-  display: flex;
-}
+.photo-modal.open { display: flex; }
 
 .photo-modal-img {
   max-width: 90vw;
   max-height: 90vh;
-  border-radius: 10px;
 }
 
 .photo-modal-close {
@@ -555,95 +607,72 @@ button:hover {
   top: 18px;
   right: 18px;
   z-index: 10000;
-  background: #fff;
-  color: #000;
-  border: none;
-  border-radius: 10px;
-  padding: 8px 12px;
-  cursor: pointer;
 }
 
+/* ===========================================================
+   ✅ FIX FINAL (MES PHOTOS) :
+   - On garde le header visible
+   - On évite que la 1ère ligne passe "sous" le header
+   - Cases plus petites + bien alignées
+   IMPORTANT : ce bloc ÉCRASE tes règles précédentes
+   =========================================================== */
 
-/* =========================
-   RESPONSIVE
-   ========================= */
-@media (max-width: 900px) {
-  .layout {
-    flex-direction: column;
-    padding: 20px;
-  }
-
-  .sidebar-right {
-    width: 100%;
-  }
-
-  .nav-links {
-    justify-content: center;
-    width: 100%;
-  }
-
-  .search-bar {
-    order: 2;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .photo-grid {
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  }
+/* 1) Pour tes pages app, on force le body en colonne (pas centré) */
+body {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
-/* ============================
-   FIX DEFINITIF : plus de bande sous header/footer
-   Header/Footer redeviennent "normaux" (dans le flux)
-   ============================ */
-
-/* annule toutes tes tentatives précédentes */
-:root{
-  --header-h: 0px !important;
-  --footer-h: 0px !important;
-  --safe-bottom: 0px !important;
+/* 2) Header en sticky (pas fixed) => pas de chevauchement */
+.header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 9999 !important;
 }
 
-/* header : plus fixed/sticky */
-.header{
-  position: relative !important;
-  top: auto !important;
-  left: auto !important;
-  right: auto !important;
-  z-index: auto !important;
+/* 3) Layout : on laisse un padding normal (pas énorme) */
+.layout {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 30px 30px !important; /* espace normal */
+  align-items: flex-start !important;
+  box-sizing: border-box !important;
 }
 
-/* footer : plus rien qui le colle */
-.footer{
-  position: relative !important;
-  bottom: auto !important;
-  z-index: auto !important;
-}
-
-/* layout : plus de padding forcé */
-.layout{
-  padding-top: 30px !important;
-  padding-bottom: 30px !important;
-}
-
-/* grille photos propre (cases petites et alignées) */
-.photo-grid{
+/* 4) Mes Photos : grille + cases plus petites et alignées */
+.photo-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)) !important;
-  gap: 16px !important;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; /* PLUS PETIT */
+  gap: 14px !important;
   width: 100% !important;
+  margin-top: 12px !important;
 }
 
-.photo-slot{
-  width: 100% !important;
+/* 5) Cases et images */
+.photo-slot {
   aspect-ratio: 1 / 1 !important;
-  overflow: hidden !important;
   border-radius: 12px !important;
+  overflow: hidden !important;
 }
-.photo-img, .photo-slot img{
+
+.photo-slot img,
+.photo-img {
   width: 100% !important;
   height: 100% !important;
   object-fit: cover !important;
   display: block !important;
+}
+
+/* 6) Bouton supprimer plus petit */
+.delete-photo {
+  top: 8px !important;
+  right: 8px !important;
+  padding: 6px 10px !important;
+  border-radius: 8px !important;
+  font-size: 13px !important;
+  z-index: 3 !important;
 }
