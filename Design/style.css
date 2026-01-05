@@ -636,9 +636,9 @@ body {
 /* 3) Layout : on laisse un padding normal (pas énorme) */
 .layout {
   width: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 30px 30px !important; /* espace normal */
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 30px 30px !important;
   align-items: flex-start !important;
   box-sizing: border-box !important;
 }
@@ -646,7 +646,7 @@ body {
 /* 4) Mes Photos : grille + cases plus petites et alignées */
 .photo-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important; /* PLUS PETIT */
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
   gap: 14px !important;
   width: 100% !important;
   margin-top: 12px !important;
@@ -675,4 +675,52 @@ body {
   border-radius: 8px !important;
   font-size: 13px !important;
   z-index: 3 !important;
+}
+
+/* ===========================================================
+   ✅ FIX SIDEBAR + GRID (ANTI-CACHE DERRIÈRE LES PHOTOS)
+   =========================================================== */
+
+/* Empêche le wrap : main + sidebar restent en 2 colonnes */
+.layout {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  gap: 30px !important;
+}
+
+/* Important pour que la grid ne déborde jamais */
+.main-content {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
+/* Sidebar toujours visible */
+.sidebar-right {
+  flex: 0 0 280px !important;
+  width: 280px !important;
+  min-width: 280px !important;
+  position: sticky !important;
+  top: 110px !important;
+  z-index: 10 !important;
+  align-self: flex-start !important;
+}
+
+/* Grid photos contenue dans le main */
+.photo-grid {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
+}
+
+/* Responsive mobile : sidebar en dessous */
+@media (max-width: 900px){
+  .layout { flex-wrap: wrap !important; }
+  .sidebar-right{
+    position: static !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 100% !important;
+    top: auto !important;
+  }
+  .photo-grid{
+    grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
+  }
 }
