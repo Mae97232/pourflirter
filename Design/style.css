@@ -788,99 +788,79 @@ body {
 }
 
 /* ===========================================================
-   ✅ PATCH FINAL (A METTRE TOUT EN BAS)
-   Objectif :
-   - Quand tu ajoutes des photos => ça scroll vers le bas
-   - La sidebar NE PASSE JAMAIS sur la grille
-   - Le main ne casse plus la largeur (bug du flex-wrap)
+   ✅ FIX ULTIME (SCROLL + SIDEBAR JAMAIS SUR LES PHOTOS)
+   ➜ On corrige le vrai problème : "main" est bloqué en 100vh
+   ➜ On force le layout en GRID 2 colonnes (réserve la place)
+   (CE BLOC DOIT RESTER TOUT EN BAS)
    =========================================================== */
 
-/* ✅ AJOUT IMPORTANT : si tes variables n’existent pas déjà,
-   on les définit ici (sinon le calc() peut bug) */
 :root{
   --sidebar-w: 320px;
   --layout-gap: 30px;
 }
 
-/* ✅ AJOUT IMPORTANT : éviter que la grille "déborde" horizontalement
-   quand tu ajoutes beaucoup de photos */
-*{
-  box-sizing: border-box;
-}
-
-/* 1) IMPORTANT : ton .main-content est en flex-wrap (ça casse).
-      On le remet en "bloc" normal, et on laisse la grille gérer l'affichage */
-.main-content{
+/* IMPORTANT : sur tes pages app, ton main est <main class="main-content"> */
+main.main-content{
+  height: auto !important;
+  min-height: 0 !important;
   display: block !important;
-  flex-wrap: nowrap !important;
-  width: 100% !important;
-  min-width: 0 !important;
-  gap: 0 !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  padding: 0 !important; /* le padding est déjà sur .layout */
 }
 
-/* 2) Layout : on fixe vraiment 2 colonnes, main + sidebar
-      (flex OK, mais on verrouille les tailles) */
-.layout{
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  align-items: flex-start !important;
-  gap: var(--layout-gap) !important; /* ✅ utilise la variable */
-  width: 100% !important;           /* ✅ évite les calculs bizarres */
-}
-
-/* 3) Main : prend toute la place restante, jamais plus large */
-.main-content{
-  flex: 1 1 auto !important;
-  min-width: 0 !important; /* ✅ très important en flex pour empêcher le débordement */
-  max-width: calc(100% - var(--sidebar-w) - var(--layout-gap)) !important;
-}
-
-/* 4) Sidebar : reste à droite et au-dessus des éléments */
-.sidebar-right{
-  margin-left: auto !important;
-  flex: 0 0 var(--sidebar-w) !important;
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-w) !important;
-  position: sticky !important;
-  top: 110px !important;
-  z-index: 999 !important;
-  align-self: flex-start !important; /* ✅ évite qu’elle se “centre” */
-}
-
-/* 5) Grille : reste DANS le main et ne déborde jamais */
-.photo-grid{
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: hidden !important;  /* empêche de “dépasser” sous la sidebar */
-}
-
-/* ✅ AJOUT : empêche des images/éléments de forcer une largeur plus grande */
-.photo-slot,
-.photo-slot img,
-.photo-img{
-  max-width: 100% !important;
-}
-
-/* 6) Scroll naturel quand il y a beaucoup de photos */
+/* Scroll normal */
 html, body{
   height: auto !important;
   overflow-y: auto !important;
 }
 
-/* Mobile : sidebar dessous */
+/* Layout en GRID => la sidebar a toujours sa place, donc pas d'overlay */
+.layout{
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-w) !important;
+  column-gap: var(--layout-gap) !important;
+
+  width: 100% !important;
+  max-width: 1400px !important;
+  margin: 0 auto !important;
+  align-items: start !important;
+}
+
+/* Main dans sa colonne */
+.main-content{
+  min-width: 0 !important;
+  width: 100% !important;
+  display: block !important;
+}
+
+/* Sidebar dans sa colonne */
+.sidebar-right{
+  width: var(--sidebar-w) !important;
+  min-width: var(--sidebar-w) !important;
+  margin-left: 0 !important; /* inutile en grid */
+  position: sticky !important;
+  top: 110px !important;
+  z-index: 5 !important;
+  align-self: start !important;
+}
+
+/* La grille ne déborde pas */
+.photo-grid{
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Responsive : sidebar dessous */
 @media (max-width: 900px){
   .layout{
-    flex-wrap: wrap !important;
-  }
-  .main-content{
-    max-width: 100% !important;
+    display: block !important;
   }
   .sidebar-right{
     position: static !important;
     width: 100% !important;
     min-width: 0 !important;
-    flex: 1 1 100% !important;
-    margin-left: 0 !important;
     top: auto !important;
+    margin-top: 20px !important;
   }
 }
