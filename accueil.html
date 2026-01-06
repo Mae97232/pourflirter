@@ -69,13 +69,14 @@
   <script type="module">
     import { supabase } from "./supabaseClient.js";
 
-    // 🔵 Vérifier si l’utilisateur est connecté
+    // ✅ Session
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) window.location.replace("index.html");
-
     const myId = session.user.id;
 
-    /* --------- SIGNED URL (photo profil privée) --------- */
+    /* -------------------------------------------------------
+       ✅ Signed URL photo profil (bucket privé profile_photos)
+    -------------------------------------------------------- */
     async function getProfilePhotoUrl(photoValue) {
       if (!photoValue) return "default.jpg";
 
@@ -86,60 +87,69 @@
 
       const { data, error } = await supabase.storage
         .from("profile_photos")
-        .createSignedUrl(photoValue, 60 * 60); // 1h
+        .createSignedUrl(photoValue, 60 * 60);
 
       if (error) {
         console.error("SignedUrl photo profil:", error);
         return "default.jpg";
       }
-
       return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
     }
 
-    // 🟣 Voir un profil + enregistrer la visite
-    window.openProfile = async function(id) {
-      if (id !== myId) {
-        await supabase.from("visits").insert({
-          visitor_id: myId,
-          visited_id: id
+    /* -------------------------------------------------------
+       ✅ Géocodage ville (Nominatim)
+       - transforme "Paris" -> {lat,lng}
+       - IMPORTANT: on met un User-Agent via headers (recommandé)
+    -------------------------------------------------------- */
+    async function geocodeCity(city) {
+      if (!city || !city.trim()) return null;
+
+      const q = encodeURIComponent(city.trim());
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}&accept-language=fr`;
+
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "Accept": "application/json"
+          }
         });
+        const data = await res.json();
+        if (!Array.isArray(data) || data.length === 0) return null;
+
+        return {
+          lat: Number(data[0].lat),
+          lng: Number(data[0].lon),
+        };
+      } catch (e) {
+        console.error("geocodeCity error:", e);
+        return null;
       }
-      window.location.href = "profil.html?user=" + id;
-    };
-
-    // ✅ Cartes (corrigé) : on génère une SIGNED URL pour CHAQUE profil
-    async function afficherCartes(containerId, profiles) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-
-      if (!profiles || profiles.length === 0) return;
-
-      const items = await Promise.all(
-        profiles.map(async (p) => {
-          const photoUrl = await getProfilePhotoUrl(p.photo);
-          return { ...p, photoUrl };
-        })
-      );
-
-      items.forEach(p => {
-        container.innerHTML += `
-          <div class="profile-card" onclick="openProfile('${p.id}')">
-            <img src="${p.photoUrl}" alt="Photo de profil"
-                 onerror="this.src='default.jpg'">
-            <div class="profile-info">
-              <span class="username">${p.username || ""}</span>
-              <span class="details">${p.gender || ""} (${p.birthplace || ""})</span>
-            </div>
-          </div>
-        `;
-      });
     }
 
-    // 🟣 Charger le profil utilisateur connecté
+    /* -------------------------------------------------------
+       ✅ Distance (Haversine km)
+    -------------------------------------------------------- */
+    function distanceKm(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const toRad = (v) => (v * Math.PI) / 180;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c;
+    }
+
+    /* -------------------------------------------------------
+       ✅ Charger mon profil + s'assurer que j'ai lat/lng
+    -------------------------------------------------------- */
+    let myProfile = null;
+
     async function loadMyProfile() {
       const { data: user, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, lat, lng, search_radius")
         .eq("id", myId)
         .single();
 
@@ -148,11 +158,29 @@
         return;
       }
 
+      // ✅ si pas de coords -> géocode la ville puis update DB
+      if ((!user.lat || !user.lng) && user.birthplace) {
+        const geo = await geocodeCity(user.birthplace);
+        if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+          const { error: upErr } = await supabase
+            .from("profiles")
+            .update({ lat: geo.lat, lng: geo.lng })
+            .eq("id", myId);
+
+          if (!upErr) {
+            user.lat = geo.lat;
+            user.lng = geo.lng;
+          }
+        }
+      }
+
+      myProfile = user;
+
       const photoUrl = await getProfilePhotoUrl(user.photo);
 
       document.getElementById("user-profile").innerHTML = `
         <div class="profile-card">
-          <img src="${photoUrl}" alt="Photo de profil" onerror="this.src='default.jpg'">
+          <img src="${photoUrl}" alt="Photo de profil">
           <h3 class="username">${user.username || ""}</h3>
           <p class="info">${user.gender || 'Non renseigné'}</p>
           <button class="certif-btn">Faites vous certifier !</button>
@@ -166,88 +194,147 @@
       `;
     }
 
-    // 🟣 Suggestions
+    /* -------------------------------------------------------
+       ✅ Affichage cartes (avec signedUrl + distance)
+    -------------------------------------------------------- */
+    async function afficherCartes(containerId, profiles) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      const myLat = myProfile?.lat;
+      const myLng = myProfile?.lng;
+
+      // construit toutes les cartes en async (signed urls)
+      const cards = await Promise.all(
+        (profiles || []).map(async (p) => {
+          const photoUrl = await getProfilePhotoUrl(p.photo);
+
+          let distTxt = "";
+          if (Number.isFinite(myLat) && Number.isFinite(myLng) && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+            const km = distanceKm(myLat, myLng, p.lat, p.lng);
+            distTxt = ` • ${Math.round(km)} km`;
+          }
+
+          return `
+            <div class="profile-card" onclick="openProfile('${p.id}')">
+              <img src="${photoUrl}" alt="">
+              <div class="profile-info">
+                <span class="username">${p.username || ""}${distTxt}</span>
+                <span class="details">${p.gender || ""} (${p.birthplace || ""})</span>
+              </div>
+            </div>
+          `;
+        })
+      );
+
+      container.innerHTML = cards.join("");
+    }
+
+    /* -------------------------------------------------------
+       ✅ Voir un profil + enregistrer la visite
+    -------------------------------------------------------- */
+    window.openProfile = async function(id) {
+      if (id !== myId) {
+        await supabase.from("visits").insert({
+          visitor_id: myId,
+          visited_id: id
+        });
+      }
+      window.location.href = "profil.html?user=" + id;
+    };
+
+    /* -------------------------------------------------------
+       ✅ Filtrer par rayon (mon search_radius)
+    -------------------------------------------------------- */
+    function withinMyRadius(p) {
+      const myLat = myProfile?.lat;
+      const myLng = myProfile?.lng;
+      const r = Number(myProfile?.search_radius ?? 20);
+
+      // si je n'ai pas de coords -> pas de filtre (sinon tu ne verras personne)
+      if (!Number.isFinite(myLat) || !Number.isFinite(myLng)) return true;
+
+      // si l'autre n'a pas de coords -> on le cache (sinon distance impossible)
+      if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return false;
+
+      return distanceKm(myLat, myLng, p.lat, p.lng) <= r;
+    }
+
+    /* -------------------------------------------------------
+       ✅ Suggestions (filtrées par rayon)
+    -------------------------------------------------------- */
     async function loadSuggestions() {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, gender, birthplace, photo")
+        .select("id, username, gender, birthplace, photo, lat, lng")
         .neq("id", myId)
-        .limit(6);
+        .limit(30); // on en prend plus pour filtrer ensuite
 
       if (error) console.error("loadSuggestions:", error);
-      await afficherCartes("suggestions", data || []);
+
+      const filtered = (data || []).filter(withinMyRadius).slice(0, 6);
+      await afficherCartes("suggestions", filtered);
     }
 
-    // 🟣 Utilisateurs en ligne (avec ta table online_users)
+    /* -------------------------------------------------------
+       ✅ Utilisateurs en ligne (filtrés par rayon)
+    -------------------------------------------------------- */
     async function loadOnline() {
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-
       const { data, error } = await supabase
         .from("online_users")
-        .select("user_id, last_seen, profiles(id, username, gender, birthplace, photo)")
-        .gte("last_seen", since);
+        .select("user_id, profiles(id, username, gender, birthplace, photo, lat, lng)")
+        .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
 
-      if (error) {
-        console.error("loadOnline:", error);
-        await afficherCartes("en-ligne", []);
-        return;
-      }
+      if (error) console.error("loadOnline:", error);
 
-      const profiles = (data || [])
+      const list = (data || [])
         .map(x => x.profiles)
         .filter(Boolean)
-        .filter(p => p.id !== myId);
+        .filter(p => p.id !== myId)
+        .filter(withinMyRadius)
+        .slice(0, 12);
 
-      await afficherCartes("en-ligne", profiles);
+      await afficherCartes("en-ligne", list);
     }
 
-    // 🟣 Derniers visiteurs
+    /* -------------------------------------------------------
+       ✅ Derniers visiteurs (on ne filtre pas)
+    -------------------------------------------------------- */
     async function loadVisitors() {
       const { data, error } = await supabase
         .from("visits")
-        .select("visitor_id, created_at, profiles(id, username, gender, birthplace, photo)")
+        .select("visitor_id, profiles(id, username, gender, birthplace, photo, lat, lng)")
         .eq("visited_id", myId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (error) {
-        console.error("loadVisitors:", error);
-        await afficherCartes("visiteurs", []);
-        return;
-      }
+      if (error) console.error("loadVisitors:", error);
 
-      const profiles = (data || [])
-        .map(v => v.profiles)
-        .filter(Boolean);
-
-      await afficherCartes("visiteurs", profiles);
+      const list = (data || []).map(v => v.profiles).filter(Boolean);
+      await afficherCartes("visiteurs", list);
     }
 
-    // 🟣 Mettre à jour le statut en ligne
+    /* -------------------------------------------------------
+       ✅ Statut en ligne
+    -------------------------------------------------------- */
     async function updateOnlineStatus() {
-      const { error } = await supabase.from("online_users").upsert({
+      await supabase.from("online_users").upsert({
         user_id: myId,
         last_seen: new Date().toISOString()
       });
-
-      if (error) console.warn("updateOnlineStatus:", error.message);
     }
+    setInterval(updateOnlineStatus, 20000);
 
-    // refresh présence + reload listes
-    setInterval(async () => {
-      await updateOnlineStatus();
-      await loadOnline();
-      await loadVisitors();
-    }, 20000);
-
-    // 🟣 Déconnexion
+    /* -------------------------------------------------------
+       ✅ Déconnexion
+    -------------------------------------------------------- */
     document.getElementById("logout").onclick = async (e) => {
       e.preventDefault();
       await supabase.auth.signOut();
       window.location.replace("index.html");
     };
 
-    // 🟣 Lancer tout
+    // ✅ Lancer tout
     await updateOnlineStatus();
     await loadMyProfile();
     await loadSuggestions();
@@ -257,3 +344,4 @@
 
 </body>
 </html>
+
