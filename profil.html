@@ -127,14 +127,12 @@ const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
 /* ===========================================================
-   ✅ AJOUT IMPORTANT : PRESENCE / EN LIGNE
-   - nécessite une colonne profiles.last_seen (timestamptz)
-   - on update au chargement + toutes les 30 secondes
+   ✅ PRESENCE / EN LIGNE (optionnel)
+   - si la colonne profiles.last_seen n'existe pas, ça log un warning
    =========================================================== */
 let presenceInterval = null;
 
 async function touchLastSeen() {
-  // On ne met à jour que pour soi (pas quand tu regardes un autre profil)
   if (!isOwner) return;
 
   const { error } = await supabase
@@ -142,25 +140,17 @@ async function touchLastSeen() {
     .update({ last_seen: new Date().toISOString() })
     .eq("id", myId);
 
-  // Si la colonne n'existe pas encore, tu verras l'erreur ici
   if (error) console.warn("last_seen update:", error.message);
 }
 
 function startPresence() {
-  // Update immédiat
   touchLastSeen();
+  presenceInterval = setInterval(touchLastSeen, 30000);
 
-  // Puis toutes les 30s
-  presenceInterval = setInterval(() => {
-    touchLastSeen();
-  }, 30000);
-
-  // Quand l'onglet est masqué/visible, on refresh
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden) touchLastSeen();
   });
 
-  // Quand l'user quitte la page, on stop
   window.addEventListener("beforeunload", () => {
     if (presenceInterval) clearInterval(presenceInterval);
   });
@@ -203,11 +193,12 @@ async function getUserPhotoUrl(path) {
 
 /* --------- PROFIL --------- */
 async function loadProfile() {
+  // ✅ IMPORTANT : maybeSingle() évite l'erreur "Cannot coerce..."
   const { data: user, error } = await supabase
     .from("profiles")
     .select("id, username, birthdate, birthplace, gender, lookingFor, search_radius, photo")
     .eq("id", viewedId)
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("Erreur SELECT profiles:", error);
@@ -300,7 +291,9 @@ if (isOwner) {
       return;
     }
 
-    document.getElementById("profile-photo").src = await getProfilePhotoUrl(path);
+    const img = document.getElementById("profile-photo");
+    img.src = await getProfilePhotoUrl(path);
+    img.onerror = () => { img.src = "default.jpg"; };
   };
 }
 
@@ -325,7 +318,7 @@ document.getElementById("logout").onclick = async (e) => {
 };
 
 /* --------- INIT --------- */
-startPresence();   // ✅ AJOUT : met à jour last_seen
+startPresence();   // met à jour last_seen (si colonne existe)
 loadProfile();
 </script>
 
