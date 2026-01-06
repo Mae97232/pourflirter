@@ -127,6 +127,15 @@ const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
 /* ===========================================================
+   ✅ IMPORTANT : s'assure que la ligne profiles existe
+   (sinon tu te reconnectes et tu vois "rien" car pas de profil)
+   =========================================================== */
+await supabase.from("profiles").upsert(
+  { id: myId },
+  { onConflict: "id" }
+);
+
+/* ===========================================================
    ✅ PRESENCE / EN LIGNE (optionnel)
    - si la colonne profiles.last_seen n'existe pas, ça log un warning
    =========================================================== */
@@ -193,12 +202,16 @@ async function getUserPhotoUrl(path) {
 
 /* --------- PROFIL --------- */
 async function loadProfile() {
+  console.log("myId:", myId, "viewedId:", viewedId);
+
   // ✅ IMPORTANT : maybeSingle() évite l'erreur "Cannot coerce..."
   const { data: user, error } = await supabase
     .from("profiles")
     .select("id, username, birthdate, birthplace, gender, lookingFor, search_radius, photo")
     .eq("id", viewedId)
     .maybeSingle();
+
+  console.log("profiles result:", { user, error });
 
   if (error) {
     console.error("Erreur SELECT profiles:", error);
