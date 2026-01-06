@@ -30,9 +30,7 @@
 
     <section class="card">
       <h1 class="title">Paramètres</h1>
-      <p class="subtitle">
-        Modifie tes informations.
-      </p>
+      <p class="subtitle">Modifie tes informations.</p>
 
       <div class="grid">
         <div class="field">
@@ -49,9 +47,8 @@
           <label for="gender">Sexe</label>
           <select id="gender">
             <option value="">Non renseigné</option>
-            <option value="Homme">Homme</option>
-            <option value="Femme">Femme</option>
-            <option value="Autre">Autre</option>
+            <option value="homme">Homme</option>
+            <option value="femme">Femme</option>
           </select>
         </div>
 
@@ -59,9 +56,9 @@
           <label for="lookingFor">Recherche</label>
           <select id="lookingFor">
             <option value="">Non renseigné</option>
-            <option value="Homme">Homme</option>
-            <option value="Femme">Femme</option>
-            <option value="Les deux">Les deux</option>
+            <option value="homme">Homme</option>
+            <option value="femme">Femme</option>
+            <option value="les deux">Les deux</option>
           </select>
         </div>
 
@@ -109,8 +106,6 @@
 
       <div class="status" id="save-status"></div>
     </section>
-
-    
 
   </main>
 
@@ -162,8 +157,18 @@
     el.textContent = msg || "";
   }
 
+  async function ensureProfileExists() {
+    // ✅ évite les erreurs si profil manquant
+    const { error } = await supabase
+      .from("profiles")
+      .upsert({ id: myId }, { onConflict: "id" });
+    if (error) console.warn("ensureProfileExists:", error.message);
+  }
+
   async function loadMe() {
     setStatus(saveStatus, "Chargement...", "");
+    await ensureProfileExists();
+
     const { data, error } = await supabase
       .from("profiles")
       .select("id, username, birthdate, gender, lookingFor, birthplace, country, search_radius, city_lat, city_lon")
@@ -177,12 +182,8 @@
     }
 
     if (!data) {
-      const { error: insErr } = await supabase.from("profiles").insert({ id: myId });
-      if (insErr) {
-        setStatus(saveStatus, "❌ Impossible de créer le profil : " + insErr.message, "err");
-        return;
-      }
-      return loadMe();
+      setStatus(saveStatus, "❌ Profil introuvable (RLS ?)", "err");
+      return;
     }
 
     usernameEl.value = data.username ?? "";
@@ -210,6 +211,7 @@
     const q = (query || "").trim();
     if (q.length < 2) {
       closeSuggestions();
+      setStatus(geoStatus, "", "");
       return;
     }
 
@@ -236,6 +238,7 @@
         const btn = document.createElement("button");
         btn.type = "button";
         btn.textContent = it.display_name;
+
         btn.onclick = () => {
           const city =
             it.address?.city ||
@@ -254,6 +257,7 @@
           closeSuggestions();
           setStatus(geoStatus, "✅ Ville sélectionnée (lat/lon prêts).", "ok");
         };
+
         suggBox.appendChild(btn);
       });
 
@@ -266,6 +270,7 @@
     }
   }
 
+  // Quand on tape : on invalide lat/lon
   cityEl.addEventListener("input", () => {
     latEl.value = "";
     lonEl.value = "";
@@ -290,19 +295,15 @@
       lookingFor: lookingForEl.value || null,
       birthplace: cityEl.value.trim() || null,
       country: countryEl.value.trim() || null,
-      search_radius: Number(radiusEl.value || 20)
+      search_radius: Number(radiusEl.value || 20),
+      city_lat: latEl.value ? Number(latEl.value) : null,
+      city_lon: lonEl.value ? Number(lonEl.value) : null
     };
 
-    const lat = latEl.value ? Number(latEl.value) : null;
-    const lon = lonEl.value ? Number(lonEl.value) : null;
-    const payloadWithGeo = { ...payload, city_lat: lat, city_lon: lon };
-
-    let { error } = await supabase.from("profiles").update(payloadWithGeo).eq("id", myId);
-
-    if (error && (String(error.message).includes("city_lat") || String(error.message).includes("city_lon"))) {
-      console.warn("Colonnes geo manquantes, save sans geo:", error.message);
-      ({ error } = await supabase.from("profiles").update(payload).eq("id", myId));
-    }
+    const { error } = await supabase
+      .from("profiles")
+      .update(payload)
+      .eq("id", myId);
 
     if (error) {
       console.error(error);
