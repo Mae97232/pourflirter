@@ -126,6 +126,46 @@ const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
+/* ===========================================================
+   ✅ AJOUT IMPORTANT : PRESENCE / EN LIGNE
+   - nécessite une colonne profiles.last_seen (timestamptz)
+   - on update au chargement + toutes les 30 secondes
+   =========================================================== */
+let presenceInterval = null;
+
+async function touchLastSeen() {
+  // On ne met à jour que pour soi (pas quand tu regardes un autre profil)
+  if (!isOwner) return;
+
+  const { error } = await supabase
+    .from("profiles")
+    .update({ last_seen: new Date().toISOString() })
+    .eq("id", myId);
+
+  // Si la colonne n'existe pas encore, tu verras l'erreur ici
+  if (error) console.warn("last_seen update:", error.message);
+}
+
+function startPresence() {
+  // Update immédiat
+  touchLastSeen();
+
+  // Puis toutes les 30s
+  presenceInterval = setInterval(() => {
+    touchLastSeen();
+  }, 30000);
+
+  // Quand l'onglet est masqué/visible, on refresh
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) touchLastSeen();
+  });
+
+  // Quand l'user quitte la page, on stop
+  window.addEventListener("beforeunload", () => {
+    if (presenceInterval) clearInterval(presenceInterval);
+  });
+}
+
 /* --------- SIGNED URL (profile_photos bucket privé) --------- */
 async function getProfilePhotoUrl(photoValue) {
   if (!photoValue) return "default.jpg";
@@ -180,7 +220,10 @@ async function loadProfile() {
   }
 
   document.getElementById("user-name").textContent = user.username || "";
-  document.getElementById("profile-photo").src = await getProfilePhotoUrl(user.photo);
+
+  const photoEl = document.getElementById("profile-photo");
+  photoEl.src = await getProfilePhotoUrl(user.photo);
+  photoEl.onerror = () => { photoEl.src = "default.jpg"; };
 
   setText("age", user.birthdate ? (getAge(user.birthdate) + " ans") : "");
   setText("zodiac-sign", user.birthdate ? getZodiac(user.birthdate) : "");
@@ -281,6 +324,8 @@ document.getElementById("logout").onclick = async (e) => {
   window.location.replace("index.html");
 };
 
+/* --------- INIT --------- */
+startPresence();   // ✅ AJOUT : met à jour last_seen
 loadProfile();
 </script>
 

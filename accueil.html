@@ -96,6 +96,45 @@
       return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
     }
 
+    // 🟣 Voir un profil + enregistrer la visite
+    window.openProfile = async function(id) {
+      if (id !== myId) {
+        await supabase.from("visits").insert({
+          visitor_id: myId,
+          visited_id: id
+        });
+      }
+      window.location.href = "profil.html?user=" + id;
+    };
+
+    // ✅ Cartes (corrigé) : on génère une SIGNED URL pour CHAQUE profil
+    async function afficherCartes(containerId, profiles) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = "";
+
+      if (!profiles || profiles.length === 0) return;
+
+      const items = await Promise.all(
+        profiles.map(async (p) => {
+          const photoUrl = await getProfilePhotoUrl(p.photo);
+          return { ...p, photoUrl };
+        })
+      );
+
+      items.forEach(p => {
+        container.innerHTML += `
+          <div class="profile-card" onclick="openProfile('${p.id}')">
+            <img src="${p.photoUrl}" alt="Photo de profil"
+                 onerror="this.src='default.jpg'">
+            <div class="profile-info">
+              <span class="username">${p.username || ""}</span>
+              <span class="details">${p.gender || ""} (${p.birthplace || ""})</span>
+            </div>
+          </div>
+        `;
+      });
+    }
+
     // 🟣 Charger le profil utilisateur connecté
     async function loadMyProfile() {
       const { data: user, error } = await supabase
@@ -113,7 +152,7 @@
 
       document.getElementById("user-profile").innerHTML = `
         <div class="profile-card">
-          <img src="${photoUrl}" alt="Photo de profil">
+          <img src="${photoUrl}" alt="Photo de profil" onerror="this.src='default.jpg'">
           <h3 class="username">${user.username || ""}</h3>
           <p class="info">${user.gender || 'Non renseigné'}</p>
           <button class="certif-btn">Faites vous certifier !</button>
@@ -127,76 +166,79 @@
       `;
     }
 
-    // 🟣 Fonction affichage cartes
-    function afficherCartes(containerId, profiles) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-
-      profiles.forEach(p => {
-        container.innerHTML += `
-          <div class="profile-card" onclick="openProfile('${p.id}')">
-            <img src="${p.photo && p.photo !== '' ? p.photo : 'default.jpg'}">
-            <div class="profile-info">
-              <span class="username">${p.username}</span>
-              <span class="details">${p.gender} (${p.birthplace})</span>
-            </div>
-          </div>
-        `;
-      });
-    }
-
-    // 🟣 Voir un profil + enregistrer la visite
-    window.openProfile = async function(id) {
-      if (id !== myId) {
-        await supabase.from("visits").insert({
-          visitor_id: myId,
-          visited_id: id
-        });
-      }
-      window.location.href = "profil.html?user=" + id;
-    };
-
     // 🟣 Suggestions
     async function loadSuggestions() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
-        .select("*")
+        .select("id, username, gender, birthplace, photo")
         .neq("id", myId)
         .limit(6);
 
-      afficherCartes("suggestions", data || []);
+      if (error) console.error("loadSuggestions:", error);
+      await afficherCartes("suggestions", data || []);
     }
 
-    // 🟣 Utilisateurs en ligne
+    // 🟣 Utilisateurs en ligne (avec ta table online_users)
     async function loadOnline() {
-      const { data } = await supabase
-        .from("online_users")
-        .select("user_id, profiles(*)")
-        .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
 
-      afficherCartes("en-ligne", (data || []).map(x => x.profiles).filter(Boolean));
+      const { data, error } = await supabase
+        .from("online_users")
+        .select("user_id, last_seen, profiles(id, username, gender, birthplace, photo)")
+        .gte("last_seen", since);
+
+      if (error) {
+        console.error("loadOnline:", error);
+        await afficherCartes("en-ligne", []);
+        return;
+      }
+
+      const profiles = (data || [])
+        .map(x => x.profiles)
+        .filter(Boolean)
+        .filter(p => p.id !== myId);
+
+      await afficherCartes("en-ligne", profiles);
     }
 
     // 🟣 Derniers visiteurs
     async function loadVisitors() {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("visits")
-        .select("visitor_id, profiles(*)")
+        .select("visitor_id, created_at, profiles(id, username, gender, birthplace, photo)")
         .eq("visited_id", myId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      afficherCartes("visiteurs", (data || []).map(v => v.profiles).filter(Boolean));
+      if (error) {
+        console.error("loadVisitors:", error);
+        await afficherCartes("visiteurs", []);
+        return;
+      }
+
+      const profiles = (data || [])
+        .map(v => v.profiles)
+        .filter(Boolean);
+
+      await afficherCartes("visiteurs", profiles);
     }
 
     // 🟣 Mettre à jour le statut en ligne
     async function updateOnlineStatus() {
-      await supabase.from("online_users").upsert({
+      const { error } = await supabase.from("online_users").upsert({
         user_id: myId,
         last_seen: new Date().toISOString()
       });
+
+      if (error) console.warn("updateOnlineStatus:", error.message);
     }
-    setInterval(updateOnlineStatus, 20000);
+
+    // refresh présence + reload listes
+    setInterval(async () => {
+      await updateOnlineStatus();
+      await loadOnline();
+      await loadVisitors();
+    }, 20000);
 
     // 🟣 Déconnexion
     document.getElementById("logout").onclick = async (e) => {
