@@ -43,7 +43,7 @@
         <label for="cgv">J’accepte les CGV</label>
       </div>
 
-      <button type="submit">S’inscrire</button>
+      <button type="submit" id="submit-btn">S’inscrire</button>
     </form>
   </section>
 </main>
@@ -51,8 +51,47 @@
 <script type="module">
 import { supabase } from "./supabaseClient.js";
 
+/* ===========================================================
+   GEO CODAGE (OpenStreetMap Nominatim)
+   - retourne { lat, lon, displayName } ou null
+   =========================================================== */
+async function geocodeCity(city) {
+  const q = city.trim();
+  if (!q) return null;
+
+  const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`;
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Accept": "application/json"
+        // (Optionnel) "User-Agent": "Pourflirter/1.0"  // certains navigateurs bloquent ce header
+      }
+    });
+    if (!res.ok) return null;
+
+    const data = await res.json();
+    if (!Array.isArray(data) || data.length === 0) return null;
+
+    return {
+      lat: Number(data[0].lat),
+      lon: Number(data[0].lon),
+      displayName: data[0].display_name || ""
+    };
+  } catch (e) {
+    console.warn("Geocoding failed:", e);
+    return null;
+  }
+}
+
+/* ===========================================================
+   SIGNUP
+   =========================================================== */
 document.getElementById("signup-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  const btn = document.getElementById("submit-btn");
+  btn.disabled = true;
+  btn.textContent = "Création du compte...";
 
   const username = document.getElementById("username").value.trim();
   const email = document.getElementById("email").value.trim();
@@ -62,12 +101,16 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
   const gender = document.getElementById("gender").value;
   const lookingFor = document.getElementById("lookingFor").value;
 
+  // 1) Création compte auth
   const { data, error } = await supabase.auth.signUp({
     email,
     password
   });
 
   if (error) {
+    btn.disabled = false;
+    btn.textContent = "S’inscrire";
+
     const msg = (error.message || "").toLowerCase();
     if (msg.includes("already") || msg.includes("registered") || msg.includes("exists")) {
       alert("❌ Cet email est déjà utilisé. Connecte-toi.");
@@ -78,32 +121,61 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
     return;
   }
 
-  const userId = data?.user?.id;
-
-  // Si email-confirmation est bien OFF, on a une session directe.
-  // Si jamais session est null quand même, on tente de récupérer la session.
+  // 2) Récupérer l’utilisateur (selon config email confirmation)
+  // - si confirmation OFF => data.user existe + session active
+  // - si confirmation ON  => session peut être null
   const { data: sessionData } = await supabase.auth.getSession();
   const session = sessionData?.session;
 
-  if (!session) {
-    alert("✅ Compte créé, mais session non active. Connecte-toi.");
+  // L'id user peut venir de data.user, ou session.user
+  const userId = data?.user?.id || session?.user?.id;
+
+  if (!userId) {
+    btn.disabled = false;
+    btn.textContent = "S’inscrire";
+    alert("✅ Compte créé, mais impossible de récupérer l’utilisateur. Connecte-toi.");
     window.location.href = "index.html";
     return;
   }
 
+  // Si tu as email confirmation ON, il faut que l'utilisateur confirme puis se connecte,
+  // sinon il n'aura pas de session active ici.
+  if (!session) {
+    btn.disabled = false;
+    btn.textContent = "S’inscrire";
+    alert("✅ Compte créé ! Vérifie ton email puis connecte-toi.");
+    window.location.href = "index.html";
+    return;
+  }
+
+  btn.textContent = "Géolocalisation de la ville...";
+
+  // 3) Géocodage ville (lat/lon)
+  const geo = await geocodeCity(birthplace);
+
+  // 4) Création/MAJ de profiles (UPsert)
+  btn.textContent = "Enregistrement du profil...";
+
+  const payload = {
+    id: userId,
+    username,
+    birthdate,
+    birthplace,
+    gender,
+    lookingFor,
+    search_radius: 20,
+    // ville géocodée
+    city_lat: geo ? geo.lat : null,
+    city_lon: geo ? geo.lon : null
+  };
+
   const { error: profileError } = await supabase
     .from("profiles")
-    .insert({
-      id: userId,
-      username,
-      birthdate,
-      birthplace,
-      gender,
-      lookingFor,
-      search_radius: 20
-    });
+    .upsert(payload, { onConflict: "id" });
 
   if (profileError) {
+    btn.disabled = false;
+    btn.textContent = "S’inscrire";
     alert("Erreur en enregistrant le profil : " + profileError.message);
     return;
   }
@@ -112,5 +184,7 @@ document.getElementById("signup-form").addEventListener("submit", async (e) => {
   window.location.href = "accueil.html";
 });
 </script>
+
 </body>
 </html>
+
