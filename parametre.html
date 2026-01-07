@@ -183,10 +183,22 @@
     // Affichés (bloqués)
     usernameEl.value = data.username ?? "";
     birthdateEl.value = data.birthdate ?? "";
-    genderEl.value = data.gender ?? "";
+
+    // ✅ FIX : normalise le sexe pour matcher les <option value="">
+    const normalizedGender = (data.gender ?? "").toString().trim().toLowerCase();
+    genderEl.value = normalizedGender;
+
+    // petit fallback si jamais valeur inconnue
+    if (![...genderEl.options].some(o => o.value === genderEl.value)) {
+      genderEl.value = "";
+    }
 
     // Modifiables
-    lookingForEl.value = data.lookingFor ?? "";
+    lookingForEl.value = (data.lookingFor ?? "").toString().trim().toLowerCase();
+    if (![...lookingForEl.options].some(o => o.value === lookingForEl.value)) {
+      lookingForEl.value = "";
+    }
+
     cityEl.value = data.birthplace ?? "";
     radiusEl.value = String(data.search_radius ?? 20);
     countryEl.value = data.country ?? "";
