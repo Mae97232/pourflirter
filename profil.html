@@ -64,7 +64,7 @@
         </li>
       </ul>
 
-      <!-- ✅ ICI on affichera les boutons quand on regarde un autre profil -->
+      <!-- ✅ Boutons actions si on visite quelqu'un -->
       <div id="message-button-container"></div>
 
       <!-- ✅ petit statut -->
@@ -174,7 +174,11 @@ async function getUserPhotoUrl(path) {
 
 /* ===========================================================
    ✅ ACTIONS : follow / contact / message
+   IMPORTANT:
+   - On NE met PLUS à jour "adeptes/adhesion" depuis le front (RLS bloque)
+   - On utilise des RPC SQL: follow_user / unfollow_user / add_contact / remove_contact
    =========================================================== */
+
 async function isFollowing() {
   const { data, error } = await supabase
     .from("follows")
@@ -199,95 +203,64 @@ async function isInContacts() {
   return !!data;
 }
 
-/* ✅ petit helper pour MAJ compteurs (simple, sans trigger) */
-async function updateCountersAfterFollow(add) {
-  // adhesion = je m'abonne (count following)
-  // adeptes = il gagne/perd un abonné
-  const { data: me } = await supabase.from("profiles").select("adhesion").eq("id", myId).maybeSingle();
-  const { data: other } = await supabase.from("profiles").select("adeptes").eq("id", viewedId).maybeSingle();
-
-  const myAdhesion = Number(me?.adhesion ?? 0);
-  const otherAdeptes = Number(other?.adeptes ?? 0);
-
-  const newMyAdhesion = Math.max(0, myAdhesion + (add ? 1 : -1));
-  const newOtherAdeptes = Math.max(0, otherAdeptes + (add ? 1 : -1));
-
-  await supabase.from("profiles").update({ adhesion: newMyAdhesion }).eq("id", myId);
-  await supabase.from("profiles").update({ adeptes: newOtherAdeptes }).eq("id", viewedId);
+async function followRpc() {
+  const { error } = await supabase.rpc("follow_user", { p_followed_id: viewedId });
+  return error;
 }
-
-async function updateCountersAfterContact(add) {
-  // contacts = mon compteur contacts
-  const { data: me } = await supabase.from("profiles").select("contacts").eq("id", myId).maybeSingle();
-  const myContacts = Number(me?.contacts ?? 0);
-  const newMyContacts = Math.max(0, myContacts + (add ? 1 : -1));
-  await supabase.from("profiles").update({ contacts: newMyContacts }).eq("id", myId);
+async function unfollowRpc() {
+  const { error } = await supabase.rpc("unfollow_user", { p_followed_id: viewedId });
+  return error;
+}
+async function addContactRpc() {
+  const { error } = await supabase.rpc("add_contact", { p_contact_id: viewedId });
+  return error;
+}
+async function removeContactRpc() {
+  const { error } = await supabase.rpc("remove_contact", { p_contact_id: viewedId });
+  return error;
 }
 
 async function toggleFollow(btn) {
   setStatus("");
+
   const following = await isFollowing();
 
   if (!following) {
-    const { error } = await supabase.from("follows").insert({
-      follower_id: myId,
-      followed_id: viewedId
-    });
-    if (error) return setStatus("❌ Erreur abonnement : " + error.message, false);
+    const err = await followRpc();
+    if (err) return setStatus("❌ Erreur abonnement (RPC) : " + err.message, false);
 
-    await updateCountersAfterFollow(true);
     btn.textContent = "✅ Abonné";
-    btn.dataset.state = "on";
     setStatus("✅ Tu es abonné(e) à ce profil.");
   } else {
-    const { error } = await supabase
-      .from("follows")
-      .delete()
-      .eq("follower_id", myId)
-      .eq("followed_id", viewedId);
+    const err = await unfollowRpc();
+    if (err) return setStatus("❌ Erreur désabonnement (RPC) : " + err.message, false);
 
-    if (error) return setStatus("❌ Erreur désabonnement : " + error.message, false);
-
-    await updateCountersAfterFollow(false);
     btn.textContent = "S’abonner";
-    btn.dataset.state = "off";
     setStatus("✅ Désabonné(e).");
   }
 }
 
 async function toggleContact(btn) {
   setStatus("");
+
   const inContacts = await isInContacts();
 
   if (!inContacts) {
-    const { error } = await supabase.from("contacts").insert({
-      user_id: myId,
-      contact_id: viewedId
-    });
-    if (error) return setStatus("❌ Erreur contact : " + error.message, false);
+    const err = await addContactRpc();
+    if (err) return setStatus("❌ Erreur contact (RPC) : " + err.message, false);
 
-    await updateCountersAfterContact(true);
     btn.textContent = "✅ Dans mes contacts";
-    btn.dataset.state = "on";
     setStatus("✅ Ajouté aux contacts.");
   } else {
-    const { error } = await supabase
-      .from("contacts")
-      .delete()
-      .eq("user_id", myId)
-      .eq("contact_id", viewedId);
+    const err = await removeContactRpc();
+    if (err) return setStatus("❌ Erreur suppression contact (RPC) : " + err.message, false);
 
-    if (error) return setStatus("❌ Erreur suppression contact : " + error.message, false);
-
-    await updateCountersAfterContact(false);
     btn.textContent = "Ajouter aux contacts";
-    btn.dataset.state = "off";
     setStatus("✅ Retiré des contacts.");
   }
 }
 
 function openMessage() {
-  // adapte si ton message.html fonctionne autrement
   window.location.href = "message.html?user=" + encodeURIComponent(viewedId);
 }
 
@@ -295,39 +268,25 @@ async function renderActions() {
   const container = document.getElementById("message-button-container");
   if (!container) return;
 
-  // Si propriétaire => pas de boutons (tu peux en mettre d'autres ici)
   if (isOwner) {
     container.innerHTML = "";
     return;
   }
 
-  // Check states
   const following = await isFollowing();
   const inContacts = await isInContacts();
 
   container.innerHTML = `
     <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-      <button id="btn-follow" type="button">
-        ${following ? "✅ Abonné" : "S’abonner"}
-      </button>
-
-      <button id="btn-contact" type="button">
-        ${inContacts ? "✅ Dans mes contacts" : "Ajouter aux contacts"}
-      </button>
-
-      <button id="btn-message" type="button">
-        Envoyer un message
-      </button>
+      <button id="btn-follow" type="button">${following ? "✅ Abonné" : "S’abonner"}</button>
+      <button id="btn-contact" type="button">${inContacts ? "✅ Dans mes contacts" : "Ajouter aux contacts"}</button>
+      <button id="btn-message" type="button">Envoyer un message</button>
     </div>
   `;
 
-  const btnFollow = document.getElementById("btn-follow");
-  const btnContact = document.getElementById("btn-contact");
-  const btnMessage = document.getElementById("btn-message");
-
-  btnFollow.onclick = () => toggleFollow(btnFollow);
-  btnContact.onclick = () => toggleContact(btnContact);
-  btnMessage.onclick = openMessage;
+  document.getElementById("btn-follow").onclick = (e) => toggleFollow(e.currentTarget);
+  document.getElementById("btn-contact").onclick = (e) => toggleContact(e.currentTarget);
+  document.getElementById("btn-message").onclick = openMessage;
 }
 
 /* --------- PROFIL --------- */
@@ -373,7 +332,7 @@ async function loadProfile() {
   await loadGallery();
 }
 
-/* --------- GALERIE (LECTURE SEULE, bucket privé OK) --------- */
+/* --------- GALERIE --------- */
 async function loadGallery() {
   const { data: files, error } = await supabase.storage
     .from("user_photos")
@@ -436,7 +395,7 @@ if (isOwner) {
   };
 }
 
-/* --------- RAYON --------- */
+/* --------- RAYON (seulement propriétaire) --------- */
 document.getElementById("radius-select").onchange = async (e) => {
   if (!isOwner) return;
 
@@ -462,3 +421,4 @@ loadProfile();
 
 </body>
 </html>
+
