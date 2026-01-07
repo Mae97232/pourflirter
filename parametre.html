@@ -33,15 +33,15 @@
       <p class="subtitle">Modifie tes informations.</p>
 
       <div class="grid">
-        <!-- ✅ BLOQUÉS (affichés mais non modifiables) -->
+        <!-- BLOQUÉS -->
         <div class="field">
           <label for="username">Pseudo</label>
-          <input id="username" type="text" disabled>
+          <input id="username" type="text" readonly>
         </div>
 
         <div class="field">
           <label for="birthdate">Date de naissance</label>
-          <input id="birthdate" type="date" disabled>
+          <input id="birthdate" type="date" readonly>
         </div>
 
         <div class="field">
@@ -53,7 +53,7 @@
           </select>
         </div>
 
-        <!-- ✅ MODIFIABLE -->
+        <!-- MODIFIABLES -->
         <div class="field">
           <label for="lookingFor">Recherche</label>
           <select id="lookingFor">
@@ -64,7 +64,6 @@
           </select>
         </div>
 
-        <!-- ✅ MODIFIABLE (géocodage) -->
         <div class="field suggest-box full">
           <label for="city">Ville (géocodée)</label>
 
@@ -161,17 +160,8 @@
     el.textContent = msg || "";
   }
 
-  async function ensureProfileExists() {
-    // ✅ évite les erreurs si profil manquant
-    const { error } = await supabase
-      .from("profiles")
-      .upsert({ id: myId }, { onConflict: "id" });
-    if (error) console.warn("ensureProfileExists:", error.message);
-  }
-
   async function loadMe() {
     setStatus(saveStatus, "Chargement...", "");
-    await ensureProfileExists();
 
     const { data, error } = await supabase
       .from("profiles")
@@ -186,23 +176,22 @@
     }
 
     if (!data) {
-      setStatus(saveStatus, "❌ Profil introuvable (RLS ?)", "err");
+      setStatus(saveStatus, "❌ Profil introuvable.", "err");
       return;
     }
 
-    // ✅ AFFICHÉS MAIS BLOQUÉS
+    // Affichés (bloqués)
     usernameEl.value = data.username ?? "";
     birthdateEl.value = data.birthdate ?? "";
     genderEl.value = data.gender ?? "";
 
-    // ✅ MODIFIABLES
+    // Modifiables
     lookingForEl.value = data.lookingFor ?? "";
     cityEl.value = data.birthplace ?? "";
     radiusEl.value = String(data.search_radius ?? 20);
     countryEl.value = data.country ?? "";
-
-    latEl.value = (data.city_lat ?? "");
-    lonEl.value = (data.city_lon ?? "");
+    latEl.value = data.city_lat ?? "";
+    lonEl.value = data.city_lon ?? "";
 
     setStatus(saveStatus, "✅ Profil chargé.", "ok");
   }
@@ -236,7 +225,7 @@
 
       if (!Array.isArray(items) || items.length === 0) {
         closeSuggestions();
-        setStatus(geoStatus, "Aucun résultat. Essaye une autre orthographe.", "err");
+        setStatus(geoStatus, "Aucun résultat.", "err");
         return;
       }
 
@@ -258,30 +247,27 @@
           cityEl.value = city;
           latEl.value = it.lat || "";
           lonEl.value = it.lon || "";
-
           if (it.address?.country) countryEl.value = it.address.country;
 
           closeSuggestions();
-          setStatus(geoStatus, "✅ Ville sélectionnée (lat/lon prêts).", "ok");
+          setStatus(geoStatus, "✅ Ville sélectionnée.", "ok");
         };
 
         suggBox.appendChild(btn);
       });
 
       suggBox.classList.add("open");
-      setStatus(geoStatus, "Choisis une suggestion pour valider la ville.", "");
+      setStatus(geoStatus, "Choisis une suggestion pour valider.", "");
     } catch (e) {
       console.error(e);
       closeSuggestions();
-      setStatus(geoStatus, "❌ Erreur géocodage (OSM) : " + e.message, "err");
+      setStatus(geoStatus, "❌ Erreur géocodage : " + e.message, "err");
     }
   }
 
-  // Quand on tape : on invalide lat/lon
   cityEl.addEventListener("input", () => {
     latEl.value = "";
     lonEl.value = "";
-
     if (geoTimer) clearTimeout(geoTimer);
     geoTimer = setTimeout(() => geocodeCity(cityEl.value), 450);
   });
@@ -295,7 +281,7 @@
   async function saveMe() {
     setStatus(saveStatus, "Enregistrement…", "");
 
-    // ✅ IMPORTANT : on NE SAUVE PAS username / birthdate / gender
+    // ✅ ON SAUVE UNIQUEMENT les champs modifiables
     const payload = {
       lookingFor: lookingForEl.value || null,
       birthplace: cityEl.value.trim() || null,
@@ -316,7 +302,7 @@
       return;
     }
 
-    setStatus(saveStatus, "✅ Enregistré. (Les autres verront les changements)", "ok");
+    setStatus(saveStatus, "✅ Enregistré.", "ok");
   }
 
   $("btn-save").addEventListener("click", saveMe);
@@ -333,3 +319,4 @@
 
 </body>
 </html>
+
