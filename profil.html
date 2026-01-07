@@ -64,7 +64,11 @@
         </li>
       </ul>
 
+      <!-- ✅ ICI on affichera les boutons quand on regarde un autre profil -->
       <div id="message-button-container"></div>
+
+      <!-- ✅ petit statut -->
+      <div id="action-status" style="margin-top:10px;"></div>
     </section>
 
   </div>
@@ -84,7 +88,6 @@
   <a href="#">CGV</a> | <a href="#">Protection des données</a> | <a href="#">Mentions légales</a>
 </footer>
 
-<!-- ================= SUPABASE ================= -->
 <script type="module">
 import { supabase } from "./supabaseClient.js";
 
@@ -118,6 +121,12 @@ function setText(id, value) {
   const el = document.getElementById(id);
   if (el) el.textContent = value ?? "";
 }
+function setStatus(msg, ok=true){
+  const el = document.getElementById("action-status");
+  if (!el) return;
+  el.textContent = msg || "";
+  el.style.color = ok ? "#1a7f37" : "#c62828";
+}
 
 /* --------- AUTH --------- */
 const { data: { session } } = await supabase.auth.getSession();
@@ -127,50 +136,12 @@ const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
-/* ===========================================================
-   ✅ IMPORTANT : s'assure que la ligne profiles existe
-   (sinon tu te reconnectes et tu vois "rien" car pas de profil)
-   =========================================================== */
-await supabase.from("profiles").upsert(
-  { id: myId },
-  { onConflict: "id" }
-);
-
-/* ===========================================================
-   ✅ PRESENCE / EN LIGNE (optionnel)
-   - si la colonne profiles.last_seen n'existe pas, ça log un warning
-   =========================================================== */
-let presenceInterval = null;
-
-async function touchLastSeen() {
-  if (!isOwner) return;
-
-  const { error } = await supabase
-    .from("profiles")
-    .update({ last_seen: new Date().toISOString() })
-    .eq("id", myId);
-
-  if (error) console.warn("last_seen update:", error.message);
-}
-
-function startPresence() {
-  touchLastSeen();
-  presenceInterval = setInterval(touchLastSeen, 30000);
-
-  document.addEventListener("visibilitychange", () => {
-    if (!document.hidden) touchLastSeen();
-  });
-
-  window.addEventListener("beforeunload", () => {
-    if (presenceInterval) clearInterval(presenceInterval);
-  });
-}
+/* ✅ assure que TON profil existe */
+await supabase.from("profiles").upsert({ id: myId }, { onConflict: "id" });
 
 /* --------- SIGNED URL (profile_photos bucket privé) --------- */
 async function getProfilePhotoUrl(photoValue) {
   if (!photoValue) return "default.jpg";
-
-  // compat anciennes valeurs URL
   if (typeof photoValue === "string" && photoValue.startsWith("http")) {
     return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
@@ -201,18 +172,171 @@ async function getUserPhotoUrl(path) {
   return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
 }
 
+/* ===========================================================
+   ✅ ACTIONS : follow / contact / message
+   =========================================================== */
+async function isFollowing() {
+  const { data, error } = await supabase
+    .from("follows")
+    .select("follower_id")
+    .eq("follower_id", myId)
+    .eq("followed_id", viewedId)
+    .maybeSingle();
+
+  if (error) console.warn("isFollowing:", error.message);
+  return !!data;
+}
+
+async function isInContacts() {
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("user_id")
+    .eq("user_id", myId)
+    .eq("contact_id", viewedId)
+    .maybeSingle();
+
+  if (error) console.warn("isInContacts:", error.message);
+  return !!data;
+}
+
+/* ✅ petit helper pour MAJ compteurs (simple, sans trigger) */
+async function updateCountersAfterFollow(add) {
+  // adhesion = je m'abonne (count following)
+  // adeptes = il gagne/perd un abonné
+  const { data: me } = await supabase.from("profiles").select("adhesion").eq("id", myId).maybeSingle();
+  const { data: other } = await supabase.from("profiles").select("adeptes").eq("id", viewedId).maybeSingle();
+
+  const myAdhesion = Number(me?.adhesion ?? 0);
+  const otherAdeptes = Number(other?.adeptes ?? 0);
+
+  const newMyAdhesion = Math.max(0, myAdhesion + (add ? 1 : -1));
+  const newOtherAdeptes = Math.max(0, otherAdeptes + (add ? 1 : -1));
+
+  await supabase.from("profiles").update({ adhesion: newMyAdhesion }).eq("id", myId);
+  await supabase.from("profiles").update({ adeptes: newOtherAdeptes }).eq("id", viewedId);
+}
+
+async function updateCountersAfterContact(add) {
+  // contacts = mon compteur contacts
+  const { data: me } = await supabase.from("profiles").select("contacts").eq("id", myId).maybeSingle();
+  const myContacts = Number(me?.contacts ?? 0);
+  const newMyContacts = Math.max(0, myContacts + (add ? 1 : -1));
+  await supabase.from("profiles").update({ contacts: newMyContacts }).eq("id", myId);
+}
+
+async function toggleFollow(btn) {
+  setStatus("");
+  const following = await isFollowing();
+
+  if (!following) {
+    const { error } = await supabase.from("follows").insert({
+      follower_id: myId,
+      followed_id: viewedId
+    });
+    if (error) return setStatus("❌ Erreur abonnement : " + error.message, false);
+
+    await updateCountersAfterFollow(true);
+    btn.textContent = "✅ Abonné";
+    btn.dataset.state = "on";
+    setStatus("✅ Tu es abonné(e) à ce profil.");
+  } else {
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", myId)
+      .eq("followed_id", viewedId);
+
+    if (error) return setStatus("❌ Erreur désabonnement : " + error.message, false);
+
+    await updateCountersAfterFollow(false);
+    btn.textContent = "S’abonner";
+    btn.dataset.state = "off";
+    setStatus("✅ Désabonné(e).");
+  }
+}
+
+async function toggleContact(btn) {
+  setStatus("");
+  const inContacts = await isInContacts();
+
+  if (!inContacts) {
+    const { error } = await supabase.from("contacts").insert({
+      user_id: myId,
+      contact_id: viewedId
+    });
+    if (error) return setStatus("❌ Erreur contact : " + error.message, false);
+
+    await updateCountersAfterContact(true);
+    btn.textContent = "✅ Dans mes contacts";
+    btn.dataset.state = "on";
+    setStatus("✅ Ajouté aux contacts.");
+  } else {
+    const { error } = await supabase
+      .from("contacts")
+      .delete()
+      .eq("user_id", myId)
+      .eq("contact_id", viewedId);
+
+    if (error) return setStatus("❌ Erreur suppression contact : " + error.message, false);
+
+    await updateCountersAfterContact(false);
+    btn.textContent = "Ajouter aux contacts";
+    btn.dataset.state = "off";
+    setStatus("✅ Retiré des contacts.");
+  }
+}
+
+function openMessage() {
+  // adapte si ton message.html fonctionne autrement
+  window.location.href = "message.html?user=" + encodeURIComponent(viewedId);
+}
+
+async function renderActions() {
+  const container = document.getElementById("message-button-container");
+  if (!container) return;
+
+  // Si propriétaire => pas de boutons (tu peux en mettre d'autres ici)
+  if (isOwner) {
+    container.innerHTML = "";
+    return;
+  }
+
+  // Check states
+  const following = await isFollowing();
+  const inContacts = await isInContacts();
+
+  container.innerHTML = `
+    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
+      <button id="btn-follow" type="button">
+        ${following ? "✅ Abonné" : "S’abonner"}
+      </button>
+
+      <button id="btn-contact" type="button">
+        ${inContacts ? "✅ Dans mes contacts" : "Ajouter aux contacts"}
+      </button>
+
+      <button id="btn-message" type="button">
+        Envoyer un message
+      </button>
+    </div>
+  `;
+
+  const btnFollow = document.getElementById("btn-follow");
+  const btnContact = document.getElementById("btn-contact");
+  const btnMessage = document.getElementById("btn-message");
+
+  btnFollow.onclick = () => toggleFollow(btnFollow);
+  btnContact.onclick = () => toggleContact(btnContact);
+  btnMessage.onclick = openMessage;
+}
+
 /* --------- PROFIL --------- */
 async function loadProfile() {
-  console.log("myId:", myId, "viewedId:", viewedId);
-
-  // ✅ IMPORTANT : maybeSingle() évite l'erreur "Cannot coerce..."
   const { data: user, error } = await supabase
     .from("profiles")
     .select("id, username, birthdate, birthplace, gender, lookingFor, search_radius, photo")
     .eq("id", viewedId)
     .maybeSingle();
-
-  console.log("profiles result:", { user, error });
 
   if (error) {
     console.error("Erreur SELECT profiles:", error);
@@ -245,6 +369,7 @@ async function loadProfile() {
     if (overlay) overlay.style.display = "none";
   }
 
+  await renderActions();
   await loadGallery();
 }
 
@@ -332,11 +457,8 @@ document.getElementById("logout").onclick = async (e) => {
 };
 
 /* --------- INIT --------- */
-startPresence();   // met à jour last_seen (si colonne existe)
 loadProfile();
 </script>
 
 </body>
 </html>
-
-
