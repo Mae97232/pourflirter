@@ -33,25 +33,27 @@
       <p class="subtitle">Modifie tes informations.</p>
 
       <div class="grid">
+        <!-- ✅ BLOQUÉS (affichés mais non modifiables) -->
         <div class="field">
           <label for="username">Pseudo</label>
-          <input id="username" type="text" placeholder="ex: coach123">
+          <input id="username" type="text" disabled>
         </div>
 
         <div class="field">
           <label for="birthdate">Date de naissance</label>
-          <input id="birthdate" type="date">
+          <input id="birthdate" type="date" disabled>
         </div>
 
         <div class="field">
           <label for="gender">Sexe</label>
-          <select id="gender">
+          <select id="gender" disabled>
             <option value="">Non renseigné</option>
             <option value="homme">Homme</option>
             <option value="femme">Femme</option>
           </select>
         </div>
 
+        <!-- ✅ MODIFIABLE -->
         <div class="field">
           <label for="lookingFor">Recherche</label>
           <select id="lookingFor">
@@ -62,6 +64,7 @@
           </select>
         </div>
 
+        <!-- ✅ MODIFIABLE (géocodage) -->
         <div class="field suggest-box full">
           <label for="city">Ville (géocodée)</label>
 
@@ -141,6 +144,7 @@
   const usernameEl = $("username");
   const birthdateEl = $("birthdate");
   const genderEl = $("gender");
+
   const lookingForEl = $("lookingFor");
   const cityEl = $("city");
   const latEl = $("city_lat");
@@ -186,9 +190,12 @@
       return;
     }
 
+    // ✅ AFFICHÉS MAIS BLOQUÉS
     usernameEl.value = data.username ?? "";
     birthdateEl.value = data.birthdate ?? "";
     genderEl.value = data.gender ?? "";
+
+    // ✅ MODIFIABLES
     lookingForEl.value = data.lookingFor ?? "";
     cityEl.value = data.birthplace ?? "";
     radiusEl.value = String(data.search_radius ?? 20);
@@ -288,10 +295,8 @@
   async function saveMe() {
     setStatus(saveStatus, "Enregistrement…", "");
 
+    // ✅ IMPORTANT : on NE SAUVE PAS username / birthdate / gender
     const payload = {
-      username: usernameEl.value.trim() || null,
-      birthdate: birthdateEl.value || null,
-      gender: genderEl.value || null,
       lookingFor: lookingForEl.value || null,
       birthplace: cityEl.value.trim() || null,
       country: countryEl.value.trim() || null,
@@ -311,7 +316,7 @@
       return;
     }
 
-    setStatus(saveStatus, "✅ Enregistré.", "ok");
+    setStatus(saveStatus, "✅ Enregistré. (Les autres verront les changements)", "ok");
   }
 
   $("btn-save").addEventListener("click", saveMe);
