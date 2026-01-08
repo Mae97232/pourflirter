@@ -99,8 +99,6 @@
 
     /* -------------------------------------------------------
        ✅ Géocodage ville (Nominatim)
-       - transforme "Paris" -> {lat,lng}
-       - IMPORTANT: on met un User-Agent via headers (recommandé)
     -------------------------------------------------------- */
     async function geocodeCity(city) {
       if (!city || !city.trim()) return null;
@@ -110,16 +108,14 @@
 
       try {
         const res = await fetch(url, {
-          headers: {
-            "Accept": "application/json"
-          }
+          headers: { "Accept": "application/json" }
         });
         const data = await res.json();
         if (!Array.isArray(data) || data.length === 0) return null;
 
         return {
           lat: Number(data[0].lat),
-          lng: Number(data[0].lon),
+          lon: Number(data[0].lon),
         };
       } catch (e) {
         console.error("geocodeCity error:", e);
@@ -143,34 +139,47 @@
     }
 
     /* -------------------------------------------------------
-       ✅ Charger mon profil + s'assurer que j'ai lat/lng
+       ✅ Ouvrir pages "relations"
+    -------------------------------------------------------- */
+    window.openRelations = function(type, userId) {
+      window.location.href =
+        "relations.html?type=" + encodeURIComponent(type) +
+        "&user=" + encodeURIComponent(userId);
+    };
+
+    /* -------------------------------------------------------
+       ✅ Charger mon profil + s'assurer city_lat/city_lon
     -------------------------------------------------------- */
     let myProfile = null;
 
     async function loadMyProfile() {
       const { data: user, error } = await supabase
         .from("profiles")
-        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, lat, lng, search_radius")
+        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, city_lat, city_lon, search_radius")
         .eq("id", myId)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Erreur loadMyProfile:", error);
         return;
       }
+      if (!user) {
+        console.warn("Profil introuvable (peut-être RLS/insert).");
+        return;
+      }
 
       // ✅ si pas de coords -> géocode la ville puis update DB
-      if ((!user.lat || !user.lng) && user.birthplace) {
+      if ((!Number.isFinite(user.city_lat) || !Number.isFinite(user.city_lon)) && user.birthplace) {
         const geo = await geocodeCity(user.birthplace);
-        if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lng)) {
+        if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)) {
           const { error: upErr } = await supabase
             .from("profiles")
-            .update({ lat: geo.lat, lng: geo.lng })
+            .update({ city_lat: geo.lat, city_lon: geo.lon })
             .eq("id", myId);
 
           if (!upErr) {
-            user.lat = geo.lat;
-            user.lng = geo.lng;
+            user.city_lat = geo.lat;
+            user.city_lon = geo.lon;
           }
         }
       }
@@ -186,33 +195,45 @@
           <p class="info">${user.gender || 'Non renseigné'}</p>
           <button class="certif-btn">Faites vous certifier !</button>
           <p class="localisation">(${user.birthplace || 'Inconnu'})</p>
+
+          <!-- ✅ STATS CLIQUABLES -->
           <div class="stats">
-            <div><strong>${user.adhesion ?? 0}</strong><br>Adhésion</div>
-            <div><strong>${user.adeptes ?? 0}</strong><br>Adeptes</div>
-            <div><strong>${user.contacts ?? 0}</strong><br>Contacts</div>
+            <div class="stat" role="button" tabindex="0" onclick="openRelations('adhesion','${myId}')">
+              <strong>${user.adhesion ?? 0}</strong><br>Adhésion
+            </div>
+            <div class="stat" role="button" tabindex="0" onclick="openRelations('adeptes','${myId}')">
+              <strong>${user.adeptes ?? 0}</strong><br>Adeptes
+            </div>
+            <div class="stat" role="button" tabindex="0" onclick="openRelations('contacts','${myId}')">
+              <strong>${user.contacts ?? 0}</strong><br>Contacts
+            </div>
           </div>
         </div>
       `;
     }
 
     /* -------------------------------------------------------
-       ✅ Affichage cartes (avec signedUrl + distance)
+       ✅ Affichage cartes (signedUrl + distance)
     -------------------------------------------------------- */
     async function afficherCartes(containerId, profiles) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
 
-      const myLat = myProfile?.lat;
-      const myLng = myProfile?.lng;
+      const myLat = myProfile?.city_lat;
+      const myLon = myProfile?.city_lon;
 
-      // construit toutes les cartes en async (signed urls)
       const cards = await Promise.all(
         (profiles || []).map(async (p) => {
           const photoUrl = await getProfilePhotoUrl(p.photo);
 
           let distTxt = "";
-          if (Number.isFinite(myLat) && Number.isFinite(myLng) && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
-            const km = distanceKm(myLat, myLng, p.lat, p.lng);
+          if (
+            Number.isFinite(myLat) &&
+            Number.isFinite(myLon) &&
+            Number.isFinite(p.city_lat) &&
+            Number.isFinite(p.city_lon)
+          ) {
+            const km = distanceKm(myLat, myLon, p.city_lat, p.city_lon);
             distTxt = ` • ${Math.round(km)} km`;
           }
 
@@ -248,17 +269,17 @@
        ✅ Filtrer par rayon (mon search_radius)
     -------------------------------------------------------- */
     function withinMyRadius(p) {
-      const myLat = myProfile?.lat;
-      const myLng = myProfile?.lng;
+      const myLat = myProfile?.city_lat;
+      const myLon = myProfile?.city_lon;
       const r = Number(myProfile?.search_radius ?? 20);
 
-      // si je n'ai pas de coords -> pas de filtre (sinon tu ne verras personne)
-      if (!Number.isFinite(myLat) || !Number.isFinite(myLng)) return true;
+      // si je n'ai pas de coords -> pas de filtre
+      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
 
-      // si l'autre n'a pas de coords -> on le cache (sinon distance impossible)
-      if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return false;
+      // si l'autre n'a pas de coords -> on le cache
+      if (!Number.isFinite(p.city_lat) || !Number.isFinite(p.city_lon)) return false;
 
-      return distanceKm(myLat, myLng, p.lat, p.lng) <= r;
+      return distanceKm(myLat, myLon, p.city_lat, p.city_lon) <= r;
     }
 
     /* -------------------------------------------------------
@@ -267,9 +288,9 @@
     async function loadSuggestions() {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id, username, gender, birthplace, photo, lat, lng")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
         .neq("id", myId)
-        .limit(30); // on en prend plus pour filtrer ensuite
+        .limit(30);
 
       if (error) console.error("loadSuggestions:", error);
 
@@ -283,7 +304,7 @@
     async function loadOnline() {
       const { data, error } = await supabase
         .from("online_users")
-        .select("user_id, profiles(id, username, gender, birthplace, photo, lat, lng)")
+        .select("user_id, profiles(id, username, gender, birthplace, photo, city_lat, city_lon)")
         .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
 
       if (error) console.error("loadOnline:", error);
@@ -299,12 +320,12 @@
     }
 
     /* -------------------------------------------------------
-       ✅ Derniers visiteurs (on ne filtre pas)
+       ✅ Derniers visiteurs (pas de filtre)
     -------------------------------------------------------- */
     async function loadVisitors() {
       const { data, error } = await supabase
         .from("visits")
-        .select("visitor_id, profiles(id, username, gender, birthplace, photo, lat, lng)")
+        .select("visitor_id, profiles(id, username, gender, birthplace, photo, city_lat, city_lon)")
         .eq("visited_id", myId)
         .order("created_at", { ascending: false })
         .limit(10);
@@ -345,4 +366,3 @@
 
 </body>
 </html>
-

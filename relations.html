@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Relations – Pourflirter</title>
+  <link rel="icon" href="Image/favicon.ico.jpg" />
+  <link rel="stylesheet" href="Design/relations.css">
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">💙 <a href="accueil.html" style="color:inherit;text-decoration:none">Pourflirter</a></div>
+  <div class="search-bar">
+    <input id="search" type="text" placeholder="Rechercher un pseudo...">
+  </div>
+  <nav class="nav-links">
+    <a href="message.html">Messages</a>
+    <a href="#">Crédits (50)</a>
+    <a href="#" id="logout">Déconnexion</a>
+  </nav>
+</header>
+
+<main class="page">
+  <h1 id="title">Relations</h1>
+
+  <div class="tabs">
+    <button class="tab" id="tab-adeptes" type="button">Adeptes</button>
+    <button class="tab" id="tab-adhesion" type="button">Adhésion</button>
+    <button class="tab" id="tab-contacts" type="button">Contacts</button>
+  </div>
+
+  <div id="status" class="status"></div>
+
+  <div id="list" class="list"></div>
+</main>
+
+<script type="module">
+import { supabase } from "./supabaseClient.js";
+
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) window.location.replace("index.html");
+
+const myId = session.user.id;
+
+const $ = (id) => document.getElementById(id);
+const statusEl = $("status");
+const listEl = $("list");
+const searchEl = $("search");
+
+function setStatus(msg, ok=true) {
+  statusEl.textContent = msg || "";
+  statusEl.dataset.type = ok ? "ok" : "err";
+}
+
+function getParams() {
+  const sp = new URLSearchParams(location.search);
+  return {
+    user: sp.get("user") || myId,                // si tu veux afficher les relations d'un autre profil plus tard
+    type: sp.get("type") || "adeptes"            // adeptes | adhesion | contacts
+  };
+}
+
+function setActiveTab(type) {
+  ["adeptes","adhesion","contacts"].forEach(t => {
+    const btn = $("tab-" + t);
+    if (!btn) return;
+    btn.classList.toggle("active", t === type);
+  });
+}
+
+function goto(type) {
+  const { user } = getParams();
+  const sp = new URLSearchParams({ type, user });
+  history.replaceState(null, "", "relations.html?" + sp.toString());
+  load();
+}
+
+$("tab-adeptes").onclick = () => goto("adeptes");
+$("tab-adhesion").onclick = () => goto("adhesion");
+$("tab-contacts").onclick = () => goto("contacts");
+
+$("logout").onclick = async (e) => {
+  e.preventDefault();
+  await supabase.auth.signOut();
+  window.location.replace("index.html");
+};
+
+/* --------- SIGNED URL photo profil (bucket privé) --------- */
+async function getProfilePhotoUrl(photoValue) {
+  if (!photoValue) return "default.jpg";
+
+  if (typeof photoValue === "string" && photoValue.startsWith("http")) {
+    return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
+  }
+
+  const { data, error } = await supabase.storage
+    .from("profile_photos")
+    .createSignedUrl(photoValue, 60 * 60);
+
+  if (error) return "default.jpg";
+  return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
+
+/* --------- RENDER --------- */
+function renderCards(items) {
+  listEl.innerHTML = "";
+  if (!items || items.length === 0) {
+    listEl.innerHTML = `<div class="empty">Aucun résultat.</div>`;
+    return;
+  }
+
+  items.forEach(p => {
+    const city = p?.birthplace ? `(${p.birthplace})` : "";
+    listEl.innerHTML += `
+      <div class="card" data-id="${p.id}">
+        <img class="avatar" src="${p._photoUrl || "default.jpg"}" alt="">
+        <div class="info">
+          <div class="username">${p.username || "Utilisateur"}</div>
+          <div class="meta">${(p.gender || "")} ${city}</div>
+        </div>
+        <button class="btn" type="button">Voir</button>
+      </div>
+    `;
+  });
+
+  // click
+  [...listEl.querySelectorAll(".card")].forEach(card => {
+    const id = card.dataset.id;
+    card.querySelector(".btn").onclick = () => {
+      window.location.href = "profil.html?user=" + encodeURIComponent(id);
+    };
+    card.onclick = (e) => {
+      // éviter double clic sur bouton
+      if (e.target.closest("button")) return;
+      window.location.href = "profil.html?user=" + encodeURIComponent(id);
+    };
+  });
+}
+
+/* --------- LOADERS --------- */
+async function fetchProfilesByIds(ids) {
+  if (!ids || ids.length === 0) return [];
+
+  // recherche par pseudo (filtre client-side simple)
+  const q = (searchEl.value || "").trim().toLowerCase();
+
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, gender, birthplace, photo")
+    .in("id", ids);
+
+  if (error) {
+    setStatus("❌ Erreur profiles: " + error.message, false);
+    return [];
+  }
+
+  // signed urls
+  const withUrls = await Promise.all((data || []).map(async p => ({
+    ...p,
+    _photoUrl: await getProfilePhotoUrl(p.photo)
+  })));
+
+  const filtered = q
+    ? withUrls.filter(p => (p.username || "").toLowerCase().includes(q))
+    : withUrls;
+
+  // tri A->Z
+  filtered.sort((a,b) => (a.username||"").localeCompare(b.username||"", "fr"));
+
+  return filtered;
+}
+
+async function loadAdeptes(userId) {
+  // adeptes = les gens qui te suivent => follower_id où followed_id = userId
+  const { data, error } = await supabase
+    .from("follows")
+    .select("follower_id")
+    .eq("followed_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setStatus("❌ Erreur follows: " + error.message, false);
+    return [];
+  }
+  const ids = (data || []).map(x => x.follower_id).filter(Boolean);
+  return fetchProfilesByIds(ids);
+}
+
+async function loadAdhesion(userId) {
+  // adhesion = tu suis qui => followed_id où follower_id = userId
+  const { data, error } = await supabase
+    .from("follows")
+    .select("followed_id")
+    .eq("follower_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setStatus("❌ Erreur follows: " + error.message, false);
+    return [];
+  }
+  const ids = (data || []).map(x => x.followed_id).filter(Boolean);
+  return fetchProfilesByIds(ids);
+}
+
+async function loadContacts(userId) {
+  // contacts = ta liste => contact_id où user_id = userId
+  const { data, error } = await supabase
+    .from("contacts")
+    .select("contact_id")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    setStatus("❌ Erreur contacts: " + error.message, false);
+    return [];
+  }
+  const ids = (data || []).map(x => x.contact_id).filter(Boolean);
+  return fetchProfilesByIds(ids);
+}
+
+async function load() {
+  const { user, type } = getParams();
+  setActiveTab(type);
+
+  const title =
+    type === "adeptes" ? "Adeptes" :
+    type === "adhesion" ? "Adhésion" :
+    "Contacts";
+  $("title").textContent = title;
+
+  setStatus("Chargement...", true);
+  listEl.innerHTML = "";
+
+  let items = [];
+  if (type === "adeptes") items = await loadAdeptes(user);
+  if (type === "adhesion") items = await loadAdhesion(user);
+  if (type === "contacts") items = await loadContacts(user);
+
+  setStatus("", true);
+  renderCards(items);
+}
+
+let t = null;
+searchEl.addEventListener("input", () => {
+  if (t) clearTimeout(t);
+  t = setTimeout(load, 250);
+});
+
+load();
+</script>
+</body>
+</html>
