@@ -64,10 +64,9 @@
         </li>
       </ul>
 
-      <!-- ✅ Boutons actions si on visite quelqu'un -->
+      <!-- Boutons quand on regarde un autre profil -->
       <div id="message-button-container"></div>
 
-      <!-- ✅ petit statut -->
       <div id="action-status" style="margin-top:10px;"></div>
     </section>
 
@@ -136,7 +135,7 @@ const myId = session.user.id;
 const viewedId = new URLSearchParams(location.search).get("user") || myId;
 const isOwner = (myId === viewedId);
 
-/* ✅ assure que TON profil existe */
+/* ✅ s'assure que TON profil existe (au cas où) */
 await supabase.from("profiles").upsert({ id: myId }, { onConflict: "id" });
 
 /* --------- SIGNED URL (profile_photos bucket privé) --------- */
@@ -145,16 +144,11 @@ async function getProfilePhotoUrl(photoValue) {
   if (typeof photoValue === "string" && photoValue.startsWith("http")) {
     return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
   }
-
   const { data, error } = await supabase.storage
     .from("profile_photos")
     .createSignedUrl(photoValue, 60 * 60);
 
-  if (error) {
-    console.error("SignedUrl photo profil:", error);
-    return "default.jpg";
-  }
-
+  if (error) return "default.jpg";
   return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
 }
 
@@ -164,76 +158,56 @@ async function getUserPhotoUrl(path) {
     .from("user_photos")
     .createSignedUrl(path, 60 * 60);
 
-  if (error) {
-    console.error("SignedUrl user photo:", error);
-    return null;
-  }
-
+  if (error) return null;
   return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
 }
 
 /* ===========================================================
    ✅ ACTIONS : follow / contact / message
-   IMPORTANT:
-   - On NE met PLUS à jour "adeptes/adhesion" depuis le front (RLS bloque)
-   - On utilise des RPC SQL: follow_user / unfollow_user / add_contact / remove_contact
+   IMPORTANT: on ne modifie PLUS les compteurs ici.
+   Les compteurs sont gérés par TRIGGERS SQL côté DB.
    =========================================================== */
-
 async function isFollowing() {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("follows")
     .select("follower_id")
     .eq("follower_id", myId)
     .eq("followed_id", viewedId)
     .maybeSingle();
-
-  if (error) console.warn("isFollowing:", error.message);
   return !!data;
 }
 
 async function isInContacts() {
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from("contacts")
     .select("user_id")
     .eq("user_id", myId)
     .eq("contact_id", viewedId)
     .maybeSingle();
-
-  if (error) console.warn("isInContacts:", error.message);
   return !!data;
-}
-
-async function followRpc() {
-  const { error } = await supabase.rpc("follow_user", { p_followed_id: viewedId });
-  return error;
-}
-async function unfollowRpc() {
-  const { error } = await supabase.rpc("unfollow_user", { p_followed_id: viewedId });
-  return error;
-}
-async function addContactRpc() {
-  const { error } = await supabase.rpc("add_contact", { p_contact_id: viewedId });
-  return error;
-}
-async function removeContactRpc() {
-  const { error } = await supabase.rpc("remove_contact", { p_contact_id: viewedId });
-  return error;
 }
 
 async function toggleFollow(btn) {
   setStatus("");
-
   const following = await isFollowing();
 
   if (!following) {
-    const err = await followRpc();
-    if (err) return setStatus("❌ Erreur abonnement (RPC) : " + err.message, false);
+    const { error } = await supabase.from("follows").insert({
+      follower_id: myId,
+      followed_id: viewedId
+    });
+    if (error) return setStatus("❌ Erreur abonnement : " + error.message, false);
 
     btn.textContent = "✅ Abonné";
     setStatus("✅ Tu es abonné(e) à ce profil.");
   } else {
-    const err = await unfollowRpc();
-    if (err) return setStatus("❌ Erreur désabonnement (RPC) : " + err.message, false);
+    const { error } = await supabase
+      .from("follows")
+      .delete()
+      .eq("follower_id", myId)
+      .eq("followed_id", viewedId);
+
+    if (error) return setStatus("❌ Erreur désabonnement : " + error.message, false);
 
     btn.textContent = "S’abonner";
     setStatus("✅ Désabonné(e).");
@@ -242,18 +216,25 @@ async function toggleFollow(btn) {
 
 async function toggleContact(btn) {
   setStatus("");
-
   const inContacts = await isInContacts();
 
   if (!inContacts) {
-    const err = await addContactRpc();
-    if (err) return setStatus("❌ Erreur contact (RPC) : " + err.message, false);
+    const { error } = await supabase.from("contacts").insert({
+      user_id: myId,
+      contact_id: viewedId
+    });
+    if (error) return setStatus("❌ Erreur contact : " + error.message, false);
 
     btn.textContent = "✅ Dans mes contacts";
     setStatus("✅ Ajouté aux contacts.");
   } else {
-    const err = await removeContactRpc();
-    if (err) return setStatus("❌ Erreur suppression contact (RPC) : " + err.message, false);
+    const { error } = await supabase
+      .from("contacts")
+      .delete()
+      .eq("user_id", myId)
+      .eq("contact_id", viewedId);
+
+    if (error) return setStatus("❌ Erreur suppression contact : " + error.message, false);
 
     btn.textContent = "Ajouter aux contacts";
     setStatus("✅ Retiré des contacts.");
@@ -284,8 +265,8 @@ async function renderActions() {
     </div>
   `;
 
-  document.getElementById("btn-follow").onclick = (e) => toggleFollow(e.currentTarget);
-  document.getElementById("btn-contact").onclick = (e) => toggleContact(e.currentTarget);
+  document.getElementById("btn-follow").onclick = (e) => toggleFollow(e.target);
+  document.getElementById("btn-contact").onclick = (e) => toggleContact(e.target);
   document.getElementById("btn-message").onclick = openMessage;
 }
 
@@ -298,7 +279,6 @@ async function loadProfile() {
     .maybeSingle();
 
   if (error) {
-    console.error("Erreur SELECT profiles:", error);
     alert("❌ Profil introuvable ou accès refusé (RLS) : " + error.message);
     return;
   }
@@ -334,11 +314,9 @@ async function loadProfile() {
 
 /* --------- GALERIE --------- */
 async function loadGallery() {
-  const { data: files, error } = await supabase.storage
+  const { data: files } = await supabase.storage
     .from("user_photos")
     .list(viewedId + "/", { limit: 200, sortBy: { column: "name", order: "desc" } });
-
-  if (error) console.error("Erreur storage list:", error);
 
   const grid = document.getElementById("photo-grid");
   grid.innerHTML = "";
@@ -348,8 +326,7 @@ async function loadGallery() {
   const items = await Promise.all(
     files.map(async (f) => {
       const path = `${viewedId}/${f.name}`;
-      const url = await getUserPhotoUrl(path);
-      return url;
+      return await getUserPhotoUrl(path);
     })
   );
 
@@ -358,7 +335,7 @@ async function loadGallery() {
   });
 }
 
-/* --------- PHOTO PROFIL (seulement propriétaire) --------- */
+/* --------- PHOTO PROFIL (propriétaire) --------- */
 if (isOwner) {
   document.getElementById("photo-label").onclick = () =>
     document.getElementById("profile-photo-upload").click();
@@ -374,20 +351,14 @@ if (isOwner) {
       .from("profile_photos")
       .upload(path, file, { upsert: true });
 
-    if (upErr) {
-      alert("❌ Upload photo profil : " + upErr.message);
-      return;
-    }
+    if (upErr) return alert("❌ Upload photo profil : " + upErr.message);
 
     const { error: dbErr } = await supabase
       .from("profiles")
       .update({ photo: path })
       .eq("id", myId);
 
-    if (dbErr) {
-      alert("❌ Update DB photo : " + dbErr.message);
-      return;
-    }
+    if (dbErr) return alert("❌ Update DB photo : " + dbErr.message);
 
     const img = document.getElementById("profile-photo");
     img.src = await getProfilePhotoUrl(path);
@@ -395,17 +366,11 @@ if (isOwner) {
   };
 }
 
-/* --------- RAYON (seulement propriétaire) --------- */
+/* --------- RAYON (propriétaire) --------- */
 document.getElementById("radius-select").onchange = async (e) => {
   if (!isOwner) return;
-
   const val = Number(e.target.value);
-  const { error } = await supabase
-    .from("profiles")
-    .update({ search_radius: val })
-    .eq("id", myId);
-
-  if (error) alert("❌ Erreur rayon : " + error.message);
+  await supabase.from("profiles").update({ search_radius: val }).eq("id", myId);
 };
 
 /* --------- LOGOUT --------- */
@@ -415,7 +380,6 @@ document.getElementById("logout").onclick = async (e) => {
   window.location.replace("index.html");
 };
 
-/* --------- INIT --------- */
 loadProfile();
 </script>
 
