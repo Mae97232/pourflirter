@@ -204,3 +204,80 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   .nav-links { order: 3; width: 100%; justify-content: center; margin-top: 8px; }
   .layout { flex-direction: column; }
 }
+/* =========================
+   RESPONSIVE (BASE)
+   À coller en bas du fichier
+========================= */
+
+:root{
+  --container-pad: 16px;
+  --gap: 16px;
+}
+
+img{
+  max-width: 100%;
+  height: auto;
+}
+
+/* Empêche les blocs de déborder sur mobile */
+*{
+  min-width: 0;
+}
+
+/* ====== TABLET (<= 1000px) ====== */
+@media (max-width: 1000px){
+  .layout{
+    grid-template-columns: 1fr !important;
+    padding: 16px !important;
+    gap: var(--gap) !important;
+  }
+
+  /* cache les sidebars si tu utilises .sidebar-left/.sidebar-right */
+  .sidebar-left,
+  .sidebar-right{
+    display: none !important;
+  }
+
+  .main-content{
+    width: 100% !important;
+  }
+}
+
+/* ====== MOBILE (<= 600px) ====== */
+@media (max-width: 600px){
+  .header{
+    padding: 12px var(--container-pad) !important;
+    gap: 10px;
+    flex-wrap: wrap; /* header passe en 2 lignes si besoin */
+  }
+
+  .search-bar{
+    width: 100% !important;
+  }
+  .search-bar input{
+    width: 100% !important;
+  }
+
+  .nav-links{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  /* Grilles : cartes plus petites, 2 colonnes sur mobile */
+  .profiles-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 12px !important;
+  }
+
+  /* Images de cartes plus petites */
+  .profile-card img{
+    height: 140px !important;
+  }
+
+  /* Boutons plus “touch friendly” */
+  button, .btn, a{
+    -webkit-tap-highlight-color: transparent;
+  }
+}

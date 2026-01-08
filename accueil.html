@@ -9,522 +9,350 @@
 
 <body>
 
-  <header class="header">
-    <div class="logo">💙 Pourflirter</div>
-    <div class="search-bar"><input type="text" placeholder="Recherche..."></div>
-    <nav class="nav-links">
-      <a href="message.html">Messages</a>
-      <a href="#">Crédits (50)</a>
-      <a href="#" id="logout">Déconnexion</a>
-    </nav>
-  </header>
+<header class="header">
+  <div class="logo">💙 Pourflirter</div>
+  <div class="search-bar"><input type="text" placeholder="Recherche..."></div>
+  <nav class="nav-links">
+    <a href="message.html">Messages</a>
+    <a href="#">Crédits (50)</a>
+    <a href="#" id="logout">Déconnexion</a>
+  </nav>
+</header>
 
-  <div class="layout">
-    <!-- Profil utilisateur connecté -->
-    <aside class="sidebar-left" id="user-profile"></aside>
+<div class="layout">
+  <!-- Profil utilisateur connecté -->
+  <aside class="sidebar-left" id="user-profile"></aside>
 
-    <!-- Contenu principal -->
-    <main class="main-content">
+  <!-- Contenu principal -->
+  <main class="main-content">
 
-      <!-- Suggestions -->
-      <section class="profile-section">
-        <h2 class="section-title">Suggestions</h2>
-        <div class="profiles-row" id="suggestions"></div>
-        <button class="show-more" id="suggestions-more" type="button">Afficher plus</button>
-      </section>
+    <!-- Suggestions -->
+    <section class="profile-section">
+      <h2 class="section-title">Suggestions</h2>
+      <div class="profiles-row" id="suggestions"></div>
+      <button class="show-more" id="more-suggestions" type="button" style="display:none;">Afficher plus</button>
+    </section>
 
-      <!-- En ligne -->
-      <section class="profile-section">
-        <h2 class="section-title">En ligne</h2>
-        <div class="profiles-row" id="en-ligne"></div>
-        <button class="show-more" id="en-ligne-more" type="button">Afficher plus</button>
-      </section>
+    <!-- En ligne -->
+    <section class="profile-section">
+      <h2 class="section-title">En ligne</h2>
+      <div class="profiles-row" id="en-ligne"></div>
+      <button class="show-more" id="more-online" type="button" style="display:none;">Afficher plus</button>
+    </section>
 
-      <!-- Derniers visiteurs -->
-      <section class="profile-section">
-        <h2 class="section-title">Derniers visiteurs</h2>
-        <div class="profiles-row" id="visiteurs"></div>
-        <button class="show-more" id="visiteurs-more" type="button">Afficher plus</button>
-      </section>
+    <!-- Derniers visiteurs -->
+    <section class="profile-section">
+      <h2 class="section-title">Derniers visiteurs</h2>
+      <div class="profiles-row" id="visiteurs"></div>
+      <button class="show-more" id="more-visitors" type="button" style="display:none;">Afficher plus</button>
+    </section>
 
-    </main>
+  </main>
 
-    <!-- Sidebar droite -->
-    <aside class="sidebar-right">
-      <a href="mes-photos.html">Mes Photos</a>
-      <a href="profil.html">Mon Profil</a>
-      <a href="mes-favoris.html">Mes Favoris</a>
-      <a href="membres_bloques.html">Membres Bloqués</a>
-      <a href="achat_credits.html">Acheter Crédits</a>
-      <a href="parametre.html">Paramètres</a>
-    </aside>
-  </div>
+  <!-- Sidebar droite -->
+  <aside class="sidebar-right">
+    <a href="mes-photos.html">Mes Photos</a>
+    <a href="profil.html">Mon Profil</a>
+    <a href="mes-favoris.html">Mes Favoris</a>
+    <a href="membres_bloques.html">Membres Bloqués</a>
+    <a href="achat_credits.html">Acheter Crédits</a>
+    <a href="parametre.html">Paramètres</a>
+  </aside>
+</div>
 
-  <footer class="footer">
-    <a href="#">Service Clients</a>
-    <a href="#">CGV</a>
-    <a href="#">Protection des données</a>
-    <a href="#">Mentions légales</a>
-    <a href="#">EN / FR</a>
-    <div>© 2025 Pourflirter. Tous droits réservés.</div>
-  </footer>
+<footer class="footer">
+  <a href="#">Service Clients</a>
+  <a href="#">CGV</a>
+  <a href="#">Protection des données</a>
+  <a href="#">Mentions légales</a>
+  <a href="#">EN / FR</a>
+  <div>© 2025 Pourflirter. Tous droits réservés.</div>
+</footer>
 
-  <script type="module">
-    import { supabase } from "./supabaseClient.js";
+<script type="module">
+import { supabase } from "./supabaseClient.js";
 
-    // ✅ Session
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) window.location.replace("index.html");
-    const myId = session.user.id;
+const { data: { session } } = await supabase.auth.getSession();
+if (!session) window.location.replace("index.html");
+const myId = session.user.id;
 
-    // ✅ Assure que mon profil existe
-    await supabase.from("profiles").upsert({ id: myId }, { onConflict: "id" });
+/* ---------------- SIGNED URL photo profil ---------------- */
+async function getProfilePhotoUrl(photoValue) {
+  if (!photoValue) return "default.jpg";
+  if (typeof photoValue === "string" && photoValue.startsWith("http")) {
+    return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
+  }
+  const { data, error } = await supabase.storage.from("profile_photos").createSignedUrl(photoValue, 60 * 60);
+  if (error) return "default.jpg";
+  return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
+}
 
-    // =========================================================
-    // Helpers UI
-    // =========================================================
-    const $ = (id) => document.getElementById(id);
+/* ---------------- Distance (Haversine) ---------------- */
+function distanceKm(lat1, lon1, lat2, lon2) {
+  const R = 6371;
+  const toRad = (v) => (v * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
 
-    function norm(v) {
-      return String(v || "").trim().toLowerCase();
+/* ---------------- Helpers filtres ---------------- */
+let myProfile = null;
+let blockedSet = new Set();
+
+function normalizeGender(v){
+  return String(v || "").trim().toLowerCase();
+}
+
+function matchesLookingFor(profile){
+  const lf = normalizeGender(myProfile?.lookingFor);
+  if (!lf || lf === "non renseigné") return true;
+  if (lf === "les deux") return true;
+  // lf = "homme" ou "femme"
+  return normalizeGender(profile.gender) === lf;
+}
+
+function withinMyRadius(p){
+  const myLat = myProfile?.lat;
+  const myLng = myProfile?.lng;
+  const r = Number(myProfile?.search_radius ?? 20);
+
+  if (!Number.isFinite(myLat) || !Number.isFinite(myLng)) return true;
+  if (!Number.isFinite(p.lat) || !Number.isFinite(p.lng)) return false;
+
+  return distanceKm(myLat, myLng, p.lat, p.lng) <= r;
+}
+
+function isBlocked(p){
+  return blockedSet.has(p.id);
+}
+
+/* ---------------- Bloqués (dans les 2 sens) ----------------
+   Table supposée: blocked_users(blocker_id uuid, blocked_id uuid)
+*/
+async function loadBlocked() {
+  blockedSet = new Set();
+
+  const { data: a } = await supabase
+    .from("blocked_users")
+    .select("blocked_id")
+    .eq("blocker_id", myId);
+
+  (a || []).forEach(x => blockedSet.add(x.blocked_id));
+
+  const { data: b } = await supabase
+    .from("blocked_users")
+    .select("blocker_id")
+    .eq("blocked_id", myId);
+
+  (b || []).forEach(x => blockedSet.add(x.blocker_id));
+}
+
+/* ---------------- Mon profil à gauche ---------------- */
+async function loadMyProfile() {
+  const { data: user, error } = await supabase
+    .from("profiles")
+    .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, lat, lng, search_radius, lookingFor")
+    .eq("id", myId)
+    .maybeSingle();
+
+  if (error || !user) return;
+
+  myProfile = user;
+
+  const photoUrl = await getProfilePhotoUrl(user.photo);
+
+  document.getElementById("user-profile").innerHTML = `
+    <div class="profile-card">
+      <img src="${photoUrl}" alt="Photo de profil">
+      <h3 class="username">${user.username || ""}</h3>
+      <p class="info">${user.gender || "Non renseigné"}</p>
+      <button class="certif-btn">Faites vous certifier !</button>
+      <p class="localisation">(${user.birthplace || "Inconnu"})</p>
+
+      <div class="stats">
+        <div style="cursor:pointer" onclick="openList('adhesion')"><strong>${user.adhesion ?? 0}</strong><br>Adhésion</div>
+        <div style="cursor:pointer" onclick="openList('adeptes')"><strong>${user.adeptes ?? 0}</strong><br>Adeptes</div>
+        <div style="cursor:pointer" onclick="openList('contacts')"><strong>${user.contacts ?? 0}</strong><br>Contacts</div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------------- UI: cartes (4 max) + afficher plus ---------------- */
+async function renderRow(containerId, list, max4 = true) {
+  const container = document.getElementById(containerId);
+  container.innerHTML = "";
+
+  const take = max4 ? (list || []).slice(0, 4) : (list || []);
+  const myLat = myProfile?.lat, myLng = myProfile?.lng;
+
+  const cards = await Promise.all(take.map(async (p) => {
+    const photoUrl = await getProfilePhotoUrl(p.photo);
+
+    let distTxt = "";
+    if (Number.isFinite(myLat) && Number.isFinite(myLng) && Number.isFinite(p.lat) && Number.isFinite(p.lng)) {
+      distTxt = ` • ${Math.round(distanceKm(myLat, myLng, p.lat, p.lng))} km`;
     }
 
-    /* -------------------------------------------------------
-       ✅ Signed URL photo profil (bucket privé profile_photos)
-    -------------------------------------------------------- */
-    async function getProfilePhotoUrl(photoValue) {
-      if (!photoValue) return "default.jpg";
-      if (typeof photoValue === "string" && photoValue.startsWith("http")) {
-        return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
-      }
-      const { data, error } = await supabase.storage
-        .from("profile_photos")
-        .createSignedUrl(photoValue, 60 * 60);
-
-      if (error) {
-        console.error("SignedUrl photo profil:", error);
-        return "default.jpg";
-      }
-      return data.signedUrl + (data.signedUrl.includes("?") ? "&" : "?") + "t=" + Date.now();
-    }
-
-    /* -------------------------------------------------------
-       ✅ Géocodage ville (Nominatim)
-    -------------------------------------------------------- */
-    async function geocodeCity(city) {
-      if (!city || !city.trim()) return null;
-      const q = encodeURIComponent(city.trim());
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}&accept-language=fr`;
-      try {
-        const res = await fetch(url, { headers: { "Accept": "application/json" } });
-        if (!res.ok) return null;
-        const data = await res.json();
-        if (!Array.isArray(data) || data.length === 0) return null;
-        return { lat: Number(data[0].lat), lon: Number(data[0].lon) };
-      } catch (e) {
-        console.error("geocodeCity error:", e);
-        return null;
-      }
-    }
-
-    /* -------------------------------------------------------
-       ✅ Distance (Haversine km)
-    -------------------------------------------------------- */
-    function distanceKm(lat1, lon1, lat2, lon2) {
-      const R = 6371;
-      const toRad = (v) => (v * Math.PI) / 180;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c;
-    }
-
-    // =========================================================
-    // Données globales
-    // =========================================================
-    let myProfile = null;
-    let blockedSet = new Set();
-
-    let suggestionsAll = [];
-    let onlineAll = [];
-    let visitorsAll = [];
-
-    const LIMIT_DEFAULT = 4;
-    const LIMIT_MORE = 12;
-
-    const state = {
-      suggestions: { limit: LIMIT_DEFAULT, expanded: false },
-      "en-ligne": { limit: LIMIT_DEFAULT, expanded: false },
-      visiteurs: { limit: LIMIT_DEFAULT, expanded: false },
-    };
-
-    // =========================================================
-    // Exclusion bloqués (dans les 2 sens)
-    // Table supposée: blocked_users(blocker_id uuid, blocked_id uuid)
-    // =========================================================
-    async function loadBlockedIds() {
-      // On récupère tous les blocs où je suis impliqué (blocker_id == moi OU blocked_id == moi)
-      const { data, error } = await supabase
-        .from("blocked_users")
-        .select("blocker_id, blocked_id")
-        .or(`blocker_id.eq.${myId},blocked_id.eq.${myId}`)
-        .limit(500);
-
-      if (error) {
-        console.warn("loadBlockedIds:", error.message);
-        blockedSet = new Set();
-        return;
-      }
-
-      const s = new Set();
-      (data || []).forEach((r) => {
-        // Si j'ai bloqué quelqu'un => on exclut blocked_id
-        if (r.blocker_id === myId && r.blocked_id) s.add(r.blocked_id);
-        // Si quelqu'un m'a bloqué => on exclut blocker_id
-        if (r.blocked_id === myId && r.blocker_id) s.add(r.blocker_id);
-      });
-
-      blockedSet = s;
-    }
-
-    function isBlocked(id) {
-      return blockedSet.has(id);
-    }
-
-    // =========================================================
-    // Filtre rayon
-    // =========================================================
-    function withinMyRadius(p) {
-      const myLat = Number(myProfile?.city_lat);
-      const myLon = Number(myProfile?.city_lon);
-      const r = Number(myProfile?.search_radius ?? 20);
-
-      // si je n'ai pas de coords -> pas de filtre
-      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
-
-      const lat = Number(p.city_lat);
-      const lon = Number(p.city_lon);
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
-
-      return distanceKm(myLat, myLon, lat, lon) <= r;
-    }
-
-    // =========================================================
-    // Filtre lookingFor (Suggestions)
-    // =========================================================
-    function matchLookingFor(p) {
-      const lf = norm(myProfile?.lookingFor);
-      if (!lf || lf === "les deux") return true;
-      return norm(p.gender) === lf;
-    }
-
-    // =========================================================
-    // Afficher cartes (format “ligne de 4”)
-    // =========================================================
-    async function renderRow(containerId, list) {
-      const container = $(containerId);
-      container.innerHTML = "";
-
-      const myLat = Number(myProfile?.city_lat);
-      const myLon = Number(myProfile?.city_lon);
-
-      const cards = await Promise.all(
-        (list || []).map(async (p) => {
-          const photoUrl = await getProfilePhotoUrl(p.photo);
-
-          let distTxt = "";
-          const lat = Number(p.city_lat);
-          const lon = Number(p.city_lon);
-          if (Number.isFinite(myLat) && Number.isFinite(myLon) && Number.isFinite(lat) && Number.isFinite(lon)) {
-            distTxt = ` • ${Math.round(distanceKm(myLat, myLon, lat, lon))} km`;
-          }
-
-          return `
-            <div class="mini-card" onclick="openProfile('${p.id}')">
-              <img src="${photoUrl}" alt="">
-              <div class="mini-info">
-                <div class="mini-username">${p.username || ""}${distTxt}</div>
-                <div class="mini-details">${p.gender || ""} (${p.birthplace || ""})</div>
-              </div>
-            </div>
-          `;
-        })
-      );
-
-      container.innerHTML = cards.join("");
-    }
-
-    function applyShowMoreButton(sectionKey, totalCount) {
-      const btnId = sectionKey + "-more";
-      const btn = $(btnId);
-      const st = state[sectionKey];
-
-      if (!btn) return;
-
-      if (totalCount <= LIMIT_DEFAULT) {
-        btn.style.display = "none";
-        return;
-      }
-      btn.style.display = "inline-block";
-      btn.textContent = st.expanded ? "Afficher moins" : "Afficher plus";
-    }
-
-    async function renderSection(sectionKey, fullList) {
-      const st = state[sectionKey];
-      const visible = (fullList || []).slice(0, st.limit);
-      await renderRow(sectionKey, visible);
-      applyShowMoreButton(sectionKey, (fullList || []).length);
-    }
-
-    function toggleMore(sectionKey) {
-      const st = state[sectionKey];
-      st.expanded = !st.expanded;
-      st.limit = st.expanded ? LIMIT_MORE : LIMIT_DEFAULT;
-
-      if (sectionKey === "suggestions") renderSection("suggestions", suggestionsAll);
-      if (sectionKey === "en-ligne") renderSection("en-ligne", onlineAll);
-      if (sectionKey === "visiteurs") renderSection("visiteurs", visitorsAll);
-    }
-
-    // =========================================================
-    // Profil gauche
-    // =========================================================
-    async function loadMyProfile() {
-      const { data: user, error } = await supabase
-        .from("profiles")
-        .select("id, username, gender, lookingFor, birthplace, adhesion, adeptes, contacts, photo, search_radius, city_lat, city_lon")
-        .eq("id", myId)
-        .maybeSingle();
-
-      if (error || !user) {
-        console.error("Erreur loadMyProfile:", error);
-        return;
-      }
-
-      // ✅ si je n'ai pas city_lat/city_lon -> géocode MA ville et update DB
-      if ((!Number.isFinite(user.city_lat) || !Number.isFinite(user.city_lon)) && user.birthplace) {
-        const geo = await geocodeCity(user.birthplace);
-        if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)) {
-          const { error: upErr } = await supabase
-            .from("profiles")
-            .update({ city_lat: geo.lat, city_lon: geo.lon })
-            .eq("id", myId);
-
-          if (!upErr) {
-            user.city_lat = geo.lat;
-            user.city_lon = geo.lon;
-          }
-        }
-      }
-
-      myProfile = user;
-
-      const photoUrl = await getProfilePhotoUrl(user.photo);
-
-      $("user-profile").innerHTML = `
-        <div class="profile-card">
-          <img src="${photoUrl}" alt="Photo de profil">
-          <h3 class="username">${user.username || ""}</h3>
-          <p class="info">${user.gender || 'Non renseigné'}</p>
-          <button class="certif-btn">Faites vous certifier !</button>
-          <p class="localisation">(${user.birthplace || 'Inconnu'})</p>
-          <div class="stats">
-            <div style="cursor:pointer" onclick="location.href='relations.html?type=adhesion'">
-              <strong>${user.adhesion ?? 0}</strong><br>Adhésion
-            </div>
-            <div style="cursor:pointer" onclick="location.href='relations.html?type=adeptes'">
-              <strong>${user.adeptes ?? 0}</strong><br>Adeptes
-            </div>
-            <div style="cursor:pointer" onclick="location.href='relations.html?type=contacts'">
-              <strong>${user.contacts ?? 0}</strong><br>Contacts
-            </div>
-          </div>
+    return `
+      <div class="mini-card" onclick="openProfile('${p.id}')">
+        <img src="${photoUrl}" alt="">
+        <div class="mini-info">
+          <div class="mini-username">${p.username || ""}${distTxt}</div>
+          <div class="mini-details">${p.gender || ""} (${p.birthplace || ""})</div>
         </div>
-      `;
-    }
+      </div>
+    `;
+  }));
 
-    // =========================================================
-    // Visites : dédupliquer “à la Wyylde”
-    // On garde 1 seul profil par visitor_id (le plus récent)
-    // =========================================================
-    function dedupeVisitors(rows) {
-      const seen = new Set();
-      const uniq = [];
-      for (const r of (rows || [])) {
-        const id = r.visitor_id;
-        if (!id) continue;
-        if (seen.has(id)) continue;
-        seen.add(id);
-        uniq.push(id);
-      }
-      return uniq;
-    }
+  container.innerHTML = cards.join("");
+}
 
-    // =========================================================
-    // Data loaders
-    // =========================================================
-    async function loadSuggestions() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .neq("id", myId)
-        .limit(80);
+/* ---------------- Open profile + visite ---------------- */
+window.openProfile = async function(id){
+  if (id !== myId) {
+    await supabase.from("visits").insert({ visitor_id: myId, visited_id: id });
+  }
+  window.location.href = "profil.html?user=" + id;
+};
 
-      if (error) console.error("loadSuggestions:", error);
+/* ---------------- (Option) ouvre une page liste ---------------- */
+window.openList = function(type){
+  // tu peux créer plus tard une page : list.html?type=adeptes / adhesion / contacts
+  // pour l'instant, simple redirection (tu peux changer)
+  window.location.href = "list.html?type=" + encodeURIComponent(type);
+};
 
-      suggestionsAll = (data || [])
-        .filter(p => p?.id && !isBlocked(p.id))
-        .filter(withinMyRadius)
-        .filter(matchLookingFor)
-        .slice(0, 60);
+/* ---------------- ONLINE STATUS ---------------- */
+async function updateOnlineStatus() {
+  await supabase.from("online_users").upsert({
+    user_id: myId,
+    last_seen: new Date().toISOString()
+  });
+}
+setInterval(updateOnlineStatus, 20000);
 
-      await renderSection("suggestions", suggestionsAll);
-    }
+/* ---------------- DATA LOADERS ---------------- */
+let cacheSuggestions = [];
+let cacheOnline = [];
+let cacheVisitors = [];
 
-    async function loadOnline() {
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+async function loadSuggestions() {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, username, gender, birthplace, photo, lat, lng")
+    .neq("id", myId)
+    .limit(60);
 
-      const { data: onlineRows, error } = await supabase
-        .from("online_users")
-        .select("user_id, last_seen")
-        .gte("last_seen", since)
-        .limit(100);
+  if (error) return;
 
-      if (error) {
-        console.error("loadOnline:", error);
-        onlineAll = [];
-        return renderSection("en-ligne", onlineAll);
-      }
+  cacheSuggestions = (data || [])
+    .filter(p => !isBlocked(p))
+    .filter(matchesLookingFor)
+    .filter(withinMyRadius);
 
-      const ids = (onlineRows || [])
-        .map(x => x.user_id)
-        .filter(id => id && id !== myId && !isBlocked(id));
+  await renderRow("suggestions", cacheSuggestions, true);
 
-      if (ids.length === 0) {
-        onlineAll = [];
-        return renderSection("en-ligne", onlineAll);
-      }
+  const btn = document.getElementById("more-suggestions");
+  btn.style.display = cacheSuggestions.length > 4 ? "inline-block" : "none";
+}
 
-      const { data: profs, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .in("id", ids);
+async function loadOnline() {
+  // online_users doit exister et être maintenu
+  const { data, error } = await supabase
+    .from("online_users")
+    .select("user_id, last_seen, profiles(id, username, gender, birthplace, photo, lat, lng)")
+    .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
 
-      if (pErr) {
-        console.error("loadOnline profiles:", pErr);
-        onlineAll = [];
-        return renderSection("en-ligne", onlineAll);
-      }
+  if (error) return;
 
-      onlineAll = (profs || [])
-        .filter(p => p?.id && p.id !== myId && !isBlocked(p.id))
-        .filter(withinMyRadius)
-        .slice(0, 100);
+  cacheOnline = (data || [])
+    .map(x => x.profiles)
+    .filter(Boolean)
+    .filter(p => p.id !== myId)
+    .filter(p => !isBlocked(p))
+    .filter(matchesLookingFor)
+    .filter(withinMyRadius);
 
-      await renderSection("en-ligne", onlineAll);
-    }
+  await renderRow("en-ligne", cacheOnline, true);
 
-    async function loadVisitors() {
-      // On prend “large” puis on déduplique
-      const { data: rows, error } = await supabase
-        .from("visits")
-        .select("visitor_id, created_at")
-        .eq("visited_id", myId)
-        .order("created_at", { ascending: false })
-        .limit(120);
+  const btn = document.getElementById("more-online");
+  btn.style.display = cacheOnline.length > 4 ? "inline-block" : "none";
+}
 
-      if (error) {
-        console.error("loadVisitors:", error);
-        visitorsAll = [];
-        return renderSection("visiteurs", visitorsAll);
-      }
+/* Derniers visiteurs style "wyylde" : dédupliqué par visitor_id */
+async function loadVisitors() {
+  const { data, error } = await supabase
+    .from("visits")
+    .select("visitor_id, created_at, profiles(id, username, gender, birthplace, photo, lat, lng)")
+    .eq("visited_id", myId)
+    .order("created_at", { ascending: false })
+    .limit(80);
 
-      const uniqIds = dedupeVisitors(rows)
-        .filter(id => id !== myId && !isBlocked(id))
-        .slice(0, 60);
+  if (error) return;
 
-      if (uniqIds.length === 0) {
-        visitorsAll = [];
-        return renderSection("visiteurs", visitorsAll);
-      }
+  const seen = new Set();
+  const dedup = [];
+  for (const v of (data || [])) {
+    const p = v.profiles;
+    if (!p) continue;
+    if (seen.has(v.visitor_id)) continue; // ✅ une seule fois
+    seen.add(v.visitor_id);
 
-      const { data: profs, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .in("id", uniqIds);
+    if (p.id === myId) continue;
+    if (isBlocked(p)) continue;
+    // visiteurs : tu peux choisir de filtrer OU PAS par rayon/lookingFor
+    // moi je respecte les 2 comme tu as demandé "filtre selon lookingFor"
+    if (!matchesLookingFor(p)) continue;
+    if (!withinMyRadius(p)) continue;
 
-      if (pErr) {
-        console.error("loadVisitors profiles:", pErr);
-        visitorsAll = [];
-        return renderSection("visiteurs", visitorsAll);
-      }
+    dedup.push(p);
+  }
 
-      // garder l’ordre des ids (le plus récent en premier)
-      const map = new Map((profs || []).map(p => [p.id, p]));
-      visitorsAll = uniqIds.map(id => map.get(id)).filter(Boolean);
+  cacheVisitors = dedup;
 
-      await renderSection("visiteurs", visitorsAll);
-    }
+  await renderRow("visiteurs", cacheVisitors, true);
 
-    // =========================================================
-    // Enregistrer visite + ouvrir profil
-    // =========================================================
-    window.openProfile = async function(id) {
-      if (id !== myId) {
-        await supabase.from("visits").insert({
-          visitor_id: myId,
-          visited_id: id
-        });
-      }
-      window.location.href = "profil.html?user=" + encodeURIComponent(id);
-    };
+  const btn = document.getElementById("more-visitors");
+  btn.style.display = cacheVisitors.length > 4 ? "inline-block" : "none";
+}
 
-    // =========================================================
-    // Online status
-    // =========================================================
-    async function updateOnlineStatus() {
-      await supabase.from("online_users").upsert({
-        user_id: myId,
-        last_seen: new Date().toISOString()
-      }, { onConflict: "user_id" });
-    }
-    setInterval(updateOnlineStatus, 20000);
+/* ---------------- Boutons Afficher plus ---------------- */
+document.getElementById("more-suggestions").onclick = async () => {
+  await renderRow("suggestions", cacheSuggestions, false);
+  document.getElementById("more-suggestions").style.display = "none";
+};
 
-    // =========================================================
-    // Boutons “Afficher plus”
-    // =========================================================
-    $("suggestions-more").addEventListener("click", () => toggleMore("suggestions"));
-    $("en-ligne-more").addEventListener("click", () => toggleMore("en-ligne"));
-    $("visiteurs-more").addEventListener("click", () => toggleMore("visiteurs"));
+document.getElementById("more-online").onclick = async () => {
+  await renderRow("en-ligne", cacheOnline, false);
+  document.getElementById("more-online").style.display = "none";
+};
 
-    // =========================================================
-    // Logout
-    // =========================================================
-    $("logout").onclick = async (e) => {
-      e.preventDefault();
-      await supabase.auth.signOut();
-      window.location.replace("index.html");
-    };
+document.getElementById("more-visitors").onclick = async () => {
+  await renderRow("visiteurs", cacheVisitors, false);
+  document.getElementById("more-visitors").style.display = "none";
+};
 
-    // =========================================================
-    // INIT
-    // =========================================================
-    await updateOnlineStatus();
-    await loadMyProfile();
-    await loadBlockedIds();
+/* ---------------- Logout ---------------- */
+document.getElementById("logout").onclick = async (e) => {
+  e.preventDefault();
+  await supabase.auth.signOut();
+  window.location.replace("index.html");
+};
 
-    await loadSuggestions();
-    await loadOnline();
-    await loadVisitors();
-
-    // refresh léger
-    setInterval(loadOnline, 30000);
-    setInterval(loadSuggestions, 60000);
-    setInterval(loadVisitors, 60000);
-  </script>
+/* ---------------- INIT ---------------- */
+await updateOnlineStatus();
+await loadBlocked();
+await loadMyProfile();
+await loadSuggestions();
+await loadOnline();
+await loadVisitors();
+</script>
 
 </body>
 </html>
