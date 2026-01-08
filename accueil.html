@@ -29,19 +29,22 @@
       <!-- Suggestions -->
       <section class="profile-section">
         <h2 class="section-title">Suggestions</h2>
-        <div class="profiles-grid" id="suggestions"></div>
+        <div class="profiles-row" id="suggestions"></div>
+        <button class="show-more" id="suggestions-more" type="button">Afficher plus</button>
       </section>
 
       <!-- En ligne -->
       <section class="profile-section">
         <h2 class="section-title">En ligne</h2>
-        <div class="profiles-grid" id="en-ligne"></div>
+        <div class="profiles-row" id="en-ligne"></div>
+        <button class="show-more" id="en-ligne-more" type="button">Afficher plus</button>
       </section>
 
       <!-- Derniers visiteurs -->
       <section class="profile-section">
         <h2 class="section-title">Derniers visiteurs</h2>
-        <div class="profiles-grid" id="visiteurs"></div>
+        <div class="profiles-row" id="visiteurs"></div>
+        <button class="show-more" id="visiteurs-more" type="button">Afficher plus</button>
       </section>
 
     </main>
@@ -66,7 +69,6 @@
     <div>© 2025 Pourflirter. Tous droits réservés.</div>
   </footer>
 
-  <!-- SCRIPT SUPABASE -->
   <script type="module">
     import { supabase } from "./supabaseClient.js";
 
@@ -75,20 +77,26 @@
     if (!session) window.location.replace("index.html");
     const myId = session.user.id;
 
-    // ✅ Assure que mon profil existe (au cas où)
+    // ✅ Assure que mon profil existe
     await supabase.from("profiles").upsert({ id: myId }, { onConflict: "id" });
+
+    // =========================================================
+    // Helpers UI
+    // =========================================================
+    const $ = (id) => document.getElementById(id);
+
+    function norm(v) {
+      return String(v || "").trim().toLowerCase();
+    }
 
     /* -------------------------------------------------------
        ✅ Signed URL photo profil (bucket privé profile_photos)
     -------------------------------------------------------- */
     async function getProfilePhotoUrl(photoValue) {
       if (!photoValue) return "default.jpg";
-
-      // compat anciennes valeurs URL
       if (typeof photoValue === "string" && photoValue.startsWith("http")) {
         return photoValue + (photoValue.includes("?") ? "&" : "?") + "t=" + Date.now();
       }
-
       const { data, error } = await supabase.storage
         .from("profile_photos")
         .createSignedUrl(photoValue, 60 * 60);
@@ -105,20 +113,14 @@
     -------------------------------------------------------- */
     async function geocodeCity(city) {
       if (!city || !city.trim()) return null;
-
       const q = encodeURIComponent(city.trim());
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}&accept-language=fr`;
-
       try {
         const res = await fetch(url, { headers: { "Accept": "application/json" } });
         if (!res.ok) return null;
         const data = await res.json();
         if (!Array.isArray(data) || data.length === 0) return null;
-
-        return {
-          lat: Number(data[0].lat),
-          lon: Number(data[0].lon),
-        };
+        return { lat: Number(data[0].lat), lon: Number(data[0].lon) };
       } catch (e) {
         console.error("geocodeCity error:", e);
         return null;
@@ -140,15 +142,160 @@
       return R * c;
     }
 
-    /* -------------------------------------------------------
-       ✅ Mon profil (coordonnées = city_lat/city_lon)
-    -------------------------------------------------------- */
+    // =========================================================
+    // Données globales
+    // =========================================================
     let myProfile = null;
+    let blockedSet = new Set();
 
+    let suggestionsAll = [];
+    let onlineAll = [];
+    let visitorsAll = [];
+
+    const LIMIT_DEFAULT = 4;
+    const LIMIT_MORE = 12;
+
+    const state = {
+      suggestions: { limit: LIMIT_DEFAULT, expanded: false },
+      "en-ligne": { limit: LIMIT_DEFAULT, expanded: false },
+      visiteurs: { limit: LIMIT_DEFAULT, expanded: false },
+    };
+
+    // =========================================================
+    // Exclusion bloqués (dans les 2 sens)
+    // Table supposée: blocked_users(blocker_id uuid, blocked_id uuid)
+    // =========================================================
+    async function loadBlockedIds() {
+      // On récupère tous les blocs où je suis impliqué (blocker_id == moi OU blocked_id == moi)
+      const { data, error } = await supabase
+        .from("blocked_users")
+        .select("blocker_id, blocked_id")
+        .or(`blocker_id.eq.${myId},blocked_id.eq.${myId}`)
+        .limit(500);
+
+      if (error) {
+        console.warn("loadBlockedIds:", error.message);
+        blockedSet = new Set();
+        return;
+      }
+
+      const s = new Set();
+      (data || []).forEach((r) => {
+        // Si j'ai bloqué quelqu'un => on exclut blocked_id
+        if (r.blocker_id === myId && r.blocked_id) s.add(r.blocked_id);
+        // Si quelqu'un m'a bloqué => on exclut blocker_id
+        if (r.blocked_id === myId && r.blocker_id) s.add(r.blocker_id);
+      });
+
+      blockedSet = s;
+    }
+
+    function isBlocked(id) {
+      return blockedSet.has(id);
+    }
+
+    // =========================================================
+    // Filtre rayon
+    // =========================================================
+    function withinMyRadius(p) {
+      const myLat = Number(myProfile?.city_lat);
+      const myLon = Number(myProfile?.city_lon);
+      const r = Number(myProfile?.search_radius ?? 20);
+
+      // si je n'ai pas de coords -> pas de filtre
+      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
+
+      const lat = Number(p.city_lat);
+      const lon = Number(p.city_lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+
+      return distanceKm(myLat, myLon, lat, lon) <= r;
+    }
+
+    // =========================================================
+    // Filtre lookingFor (Suggestions)
+    // =========================================================
+    function matchLookingFor(p) {
+      const lf = norm(myProfile?.lookingFor);
+      if (!lf || lf === "les deux") return true;
+      return norm(p.gender) === lf;
+    }
+
+    // =========================================================
+    // Afficher cartes (format “ligne de 4”)
+    // =========================================================
+    async function renderRow(containerId, list) {
+      const container = $(containerId);
+      container.innerHTML = "";
+
+      const myLat = Number(myProfile?.city_lat);
+      const myLon = Number(myProfile?.city_lon);
+
+      const cards = await Promise.all(
+        (list || []).map(async (p) => {
+          const photoUrl = await getProfilePhotoUrl(p.photo);
+
+          let distTxt = "";
+          const lat = Number(p.city_lat);
+          const lon = Number(p.city_lon);
+          if (Number.isFinite(myLat) && Number.isFinite(myLon) && Number.isFinite(lat) && Number.isFinite(lon)) {
+            distTxt = ` • ${Math.round(distanceKm(myLat, myLon, lat, lon))} km`;
+          }
+
+          return `
+            <div class="mini-card" onclick="openProfile('${p.id}')">
+              <img src="${photoUrl}" alt="">
+              <div class="mini-info">
+                <div class="mini-username">${p.username || ""}${distTxt}</div>
+                <div class="mini-details">${p.gender || ""} (${p.birthplace || ""})</div>
+              </div>
+            </div>
+          `;
+        })
+      );
+
+      container.innerHTML = cards.join("");
+    }
+
+    function applyShowMoreButton(sectionKey, totalCount) {
+      const btnId = sectionKey + "-more";
+      const btn = $(btnId);
+      const st = state[sectionKey];
+
+      if (!btn) return;
+
+      if (totalCount <= LIMIT_DEFAULT) {
+        btn.style.display = "none";
+        return;
+      }
+      btn.style.display = "inline-block";
+      btn.textContent = st.expanded ? "Afficher moins" : "Afficher plus";
+    }
+
+    async function renderSection(sectionKey, fullList) {
+      const st = state[sectionKey];
+      const visible = (fullList || []).slice(0, st.limit);
+      await renderRow(sectionKey, visible);
+      applyShowMoreButton(sectionKey, (fullList || []).length);
+    }
+
+    function toggleMore(sectionKey) {
+      const st = state[sectionKey];
+      st.expanded = !st.expanded;
+      st.limit = st.expanded ? LIMIT_MORE : LIMIT_DEFAULT;
+
+      if (sectionKey === "suggestions") renderSection("suggestions", suggestionsAll);
+      if (sectionKey === "en-ligne") renderSection("en-ligne", onlineAll);
+      if (sectionKey === "visiteurs") renderSection("visiteurs", visitorsAll);
+    }
+
+    // =========================================================
+    // Profil gauche
+    // =========================================================
     async function loadMyProfile() {
       const { data: user, error } = await supabase
         .from("profiles")
-        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, search_radius, city_lat, city_lon")
+        .select("id, username, gender, lookingFor, birthplace, adhesion, adeptes, contacts, photo, search_radius, city_lat, city_lon")
         .eq("id", myId)
         .maybeSingle();
 
@@ -177,7 +324,7 @@
 
       const photoUrl = await getProfilePhotoUrl(user.photo);
 
-      document.getElementById("user-profile").innerHTML = `
+      $("user-profile").innerHTML = `
         <div class="profile-card">
           <img src="${photoUrl}" alt="Photo de profil">
           <h3 class="username">${user.username || ""}</h3>
@@ -199,9 +346,132 @@
       `;
     }
 
-    /* -------------------------------------------------------
-       ✅ Ouvrir profil + enregistrer visite
-    -------------------------------------------------------- */
+    // =========================================================
+    // Visites : dédupliquer “à la Wyylde”
+    // On garde 1 seul profil par visitor_id (le plus récent)
+    // =========================================================
+    function dedupeVisitors(rows) {
+      const seen = new Set();
+      const uniq = [];
+      for (const r of (rows || [])) {
+        const id = r.visitor_id;
+        if (!id) continue;
+        if (seen.has(id)) continue;
+        seen.add(id);
+        uniq.push(id);
+      }
+      return uniq;
+    }
+
+    // =========================================================
+    // Data loaders
+    // =========================================================
+    async function loadSuggestions() {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
+        .neq("id", myId)
+        .limit(80);
+
+      if (error) console.error("loadSuggestions:", error);
+
+      suggestionsAll = (data || [])
+        .filter(p => p?.id && !isBlocked(p.id))
+        .filter(withinMyRadius)
+        .filter(matchLookingFor)
+        .slice(0, 60);
+
+      await renderSection("suggestions", suggestionsAll);
+    }
+
+    async function loadOnline() {
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+
+      const { data: onlineRows, error } = await supabase
+        .from("online_users")
+        .select("user_id, last_seen")
+        .gte("last_seen", since)
+        .limit(100);
+
+      if (error) {
+        console.error("loadOnline:", error);
+        onlineAll = [];
+        return renderSection("en-ligne", onlineAll);
+      }
+
+      const ids = (onlineRows || [])
+        .map(x => x.user_id)
+        .filter(id => id && id !== myId && !isBlocked(id));
+
+      if (ids.length === 0) {
+        onlineAll = [];
+        return renderSection("en-ligne", onlineAll);
+      }
+
+      const { data: profs, error: pErr } = await supabase
+        .from("profiles")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
+        .in("id", ids);
+
+      if (pErr) {
+        console.error("loadOnline profiles:", pErr);
+        onlineAll = [];
+        return renderSection("en-ligne", onlineAll);
+      }
+
+      onlineAll = (profs || [])
+        .filter(p => p?.id && p.id !== myId && !isBlocked(p.id))
+        .filter(withinMyRadius)
+        .slice(0, 100);
+
+      await renderSection("en-ligne", onlineAll);
+    }
+
+    async function loadVisitors() {
+      // On prend “large” puis on déduplique
+      const { data: rows, error } = await supabase
+        .from("visits")
+        .select("visitor_id, created_at")
+        .eq("visited_id", myId)
+        .order("created_at", { ascending: false })
+        .limit(120);
+
+      if (error) {
+        console.error("loadVisitors:", error);
+        visitorsAll = [];
+        return renderSection("visiteurs", visitorsAll);
+      }
+
+      const uniqIds = dedupeVisitors(rows)
+        .filter(id => id !== myId && !isBlocked(id))
+        .slice(0, 60);
+
+      if (uniqIds.length === 0) {
+        visitorsAll = [];
+        return renderSection("visiteurs", visitorsAll);
+      }
+
+      const { data: profs, error: pErr } = await supabase
+        .from("profiles")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
+        .in("id", uniqIds);
+
+      if (pErr) {
+        console.error("loadVisitors profiles:", pErr);
+        visitorsAll = [];
+        return renderSection("visiteurs", visitorsAll);
+      }
+
+      // garder l’ordre des ids (le plus récent en premier)
+      const map = new Map((profs || []).map(p => [p.id, p]));
+      visitorsAll = uniqIds.map(id => map.get(id)).filter(Boolean);
+
+      await renderSection("visiteurs", visitorsAll);
+    }
+
+    // =========================================================
+    // Enregistrer visite + ouvrir profil
+    // =========================================================
     window.openProfile = async function(id) {
       if (id !== myId) {
         await supabase.from("visits").insert({
@@ -212,165 +482,9 @@
       window.location.href = "profil.html?user=" + encodeURIComponent(id);
     };
 
-    /* -------------------------------------------------------
-       ✅ Filtrer par rayon (search_radius) avec city_lat/city_lon
-    -------------------------------------------------------- */
-    function withinMyRadius(p) {
-      const myLat = Number(myProfile?.city_lat);
-      const myLon = Number(myProfile?.city_lon);
-      const r = Number(myProfile?.search_radius ?? 20);
-
-      // si je n'ai pas de coords -> on ne filtre pas
-      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
-
-      const lat = Number(p.city_lat);
-      const lon = Number(p.city_lon);
-
-      // si l'autre n'a pas de coords -> on le cache (distance impossible)
-      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
-
-      return distanceKm(myLat, myLon, lat, lon) <= r;
-    }
-
-    /* -------------------------------------------------------
-       ✅ Affichage cartes (avec distance)
-    -------------------------------------------------------- */
-    async function afficherCartes(containerId, profiles) {
-      const container = document.getElementById(containerId);
-      container.innerHTML = "";
-
-      const myLat = Number(myProfile?.city_lat);
-      const myLon = Number(myProfile?.city_lon);
-
-      const cards = await Promise.all(
-        (profiles || []).map(async (p) => {
-          const photoUrl = await getProfilePhotoUrl(p.photo);
-
-          let distTxt = "";
-          const lat = Number(p.city_lat);
-          const lon = Number(p.city_lon);
-
-          if (Number.isFinite(myLat) && Number.isFinite(myLon) && Number.isFinite(lat) && Number.isFinite(lon)) {
-            const km = distanceKm(myLat, myLon, lat, lon);
-            distTxt = ` • ${Math.round(km)} km`;
-          }
-
-          return `
-            <div class="profile-card" onclick="openProfile('${p.id}')">
-              <img src="${photoUrl}" alt="">
-              <div class="profile-info">
-                <span class="username">${p.username || ""}${distTxt}</span>
-                <span class="details">${p.gender || ""} (${p.birthplace || ""})</span>
-              </div>
-            </div>
-          `;
-        })
-      );
-
-      container.innerHTML = cards.join("");
-    }
-
-    /* -------------------------------------------------------
-       ✅ Suggestions (proches)
-       (option: tu peux aussi filtrer par "lookingFor" si tu veux)
-    -------------------------------------------------------- */
-    async function loadSuggestions() {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .neq("id", myId)
-        .limit(50); // on prend large puis on filtre au rayon
-
-      if (error) console.error("loadSuggestions:", error);
-
-      const filtered = (data || [])
-        .filter(withinMyRadius)
-        .slice(0, 6);
-
-      await afficherCartes("suggestions", filtered);
-    }
-
-    /* -------------------------------------------------------
-       ✅ En ligne (table online_users)
-       - on récupère les ids online puis on fetch profiles
-    -------------------------------------------------------- */
-    async function loadOnline() {
-      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
-
-      const { data: onlineRows, error } = await supabase
-        .from("online_users")
-        .select("user_id, last_seen")
-        .gte("last_seen", since)
-        .limit(50);
-
-      if (error) {
-        console.error("loadOnline:", error);
-        return afficherCartes("en-ligne", []);
-      }
-
-      const ids = (onlineRows || [])
-        .map(x => x.user_id)
-        .filter(id => id && id !== myId);
-
-      if (ids.length === 0) return afficherCartes("en-ligne", []);
-
-      const { data: profs, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .in("id", ids);
-
-      if (pErr) {
-        console.error("loadOnline profiles:", pErr);
-        return afficherCartes("en-ligne", []);
-      }
-
-      const filtered = (profs || [])
-        .filter(withinMyRadius)
-        .slice(0, 12);
-
-      await afficherCartes("en-ligne", filtered);
-    }
-
-    /* -------------------------------------------------------
-       ✅ Derniers visiteurs (table visits)
-       - on récupère visitor_id puis on fetch profiles
-    -------------------------------------------------------- */
-    async function loadVisitors() {
-      const { data: rows, error } = await supabase
-        .from("visits")
-        .select("visitor_id, created_at")
-        .eq("visited_id", myId)
-        .order("created_at", { ascending: false })
-        .limit(10);
-
-      if (error) {
-        console.error("loadVisitors:", error);
-        return afficherCartes("visiteurs", []);
-      }
-
-      const ids = (rows || []).map(r => r.visitor_id).filter(Boolean);
-      if (ids.length === 0) return afficherCartes("visiteurs", []);
-
-      const { data: profs, error: pErr } = await supabase
-        .from("profiles")
-        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
-        .in("id", ids);
-
-      if (pErr) {
-        console.error("loadVisitors profiles:", pErr);
-        return afficherCartes("visiteurs", []);
-      }
-
-      // garde l’ordre des visites
-      const map = new Map((profs || []).map(p => [p.id, p]));
-      const ordered = ids.map(id => map.get(id)).filter(Boolean);
-
-      await afficherCartes("visiteurs", ordered);
-    }
-
-    /* -------------------------------------------------------
-       ✅ Statut en ligne (update online_users)
-    -------------------------------------------------------- */
+    // =========================================================
+    // Online status
+    // =========================================================
     async function updateOnlineStatus() {
       await supabase.from("online_users").upsert({
         user_id: myId,
@@ -379,25 +493,37 @@
     }
     setInterval(updateOnlineStatus, 20000);
 
-    /* -------------------------------------------------------
-       ✅ Déconnexion
-    -------------------------------------------------------- */
-    document.getElementById("logout").onclick = async (e) => {
+    // =========================================================
+    // Boutons “Afficher plus”
+    // =========================================================
+    $("suggestions-more").addEventListener("click", () => toggleMore("suggestions"));
+    $("en-ligne-more").addEventListener("click", () => toggleMore("en-ligne"));
+    $("visiteurs-more").addEventListener("click", () => toggleMore("visiteurs"));
+
+    // =========================================================
+    // Logout
+    // =========================================================
+    $("logout").onclick = async (e) => {
       e.preventDefault();
       await supabase.auth.signOut();
       window.location.replace("index.html");
     };
 
-    // ✅ Lancer tout
+    // =========================================================
+    // INIT
+    // =========================================================
     await updateOnlineStatus();
     await loadMyProfile();
+    await loadBlockedIds();
+
     await loadSuggestions();
     await loadOnline();
     await loadVisitors();
 
-    // ✅ refresh online + suggestions parfois (optionnel)
+    // refresh léger
     setInterval(loadOnline, 30000);
     setInterval(loadSuggestions, 60000);
+    setInterval(loadVisitors, 60000);
   </script>
 
 </body>
