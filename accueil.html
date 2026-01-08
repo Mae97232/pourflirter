@@ -75,6 +75,9 @@
     if (!session) window.location.replace("index.html");
     const myId = session.user.id;
 
+    // ✅ Assure que mon profil existe (au cas où)
+    await supabase.from("profiles").upsert({ id: myId }, { onConflict: "id" });
+
     /* -------------------------------------------------------
        ✅ Signed URL photo profil (bucket privé profile_photos)
     -------------------------------------------------------- */
@@ -107,9 +110,8 @@
       const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${q}&accept-language=fr`;
 
       try {
-        const res = await fetch(url, {
-          headers: { "Accept": "application/json" }
-        });
+        const res = await fetch(url, { headers: { "Accept": "application/json" } });
+        if (!res.ok) return null;
         const data = await res.json();
         if (!Array.isArray(data) || data.length === 0) return null;
 
@@ -139,36 +141,23 @@
     }
 
     /* -------------------------------------------------------
-       ✅ Ouvrir pages "relations"
-    -------------------------------------------------------- */
-    window.openRelations = function(type, userId) {
-      window.location.href =
-        "relations.html?type=" + encodeURIComponent(type) +
-        "&user=" + encodeURIComponent(userId);
-    };
-
-    /* -------------------------------------------------------
-       ✅ Charger mon profil + s'assurer city_lat/city_lon
+       ✅ Mon profil (coordonnées = city_lat/city_lon)
     -------------------------------------------------------- */
     let myProfile = null;
 
     async function loadMyProfile() {
       const { data: user, error } = await supabase
         .from("profiles")
-        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, city_lat, city_lon, search_radius")
+        .select("id, username, gender, birthplace, adhesion, adeptes, contacts, photo, search_radius, city_lat, city_lon")
         .eq("id", myId)
         .maybeSingle();
 
-      if (error) {
+      if (error || !user) {
         console.error("Erreur loadMyProfile:", error);
         return;
       }
-      if (!user) {
-        console.warn("Profil introuvable (peut-être RLS/insert).");
-        return;
-      }
 
-      // ✅ si pas de coords -> géocode la ville puis update DB
+      // ✅ si je n'ai pas city_lat/city_lon -> géocode MA ville et update DB
       if ((!Number.isFinite(user.city_lat) || !Number.isFinite(user.city_lon)) && user.birthplace) {
         const geo = await geocodeCity(user.birthplace);
         if (geo && Number.isFinite(geo.lat) && Number.isFinite(geo.lon)) {
@@ -195,16 +184,14 @@
           <p class="info">${user.gender || 'Non renseigné'}</p>
           <button class="certif-btn">Faites vous certifier !</button>
           <p class="localisation">(${user.birthplace || 'Inconnu'})</p>
-
-          <!-- ✅ STATS CLIQUABLES -->
           <div class="stats">
-            <div class="stat" role="button" tabindex="0" onclick="openRelations('adhesion','${myId}')">
+            <div style="cursor:pointer" onclick="location.href='relations.html?type=adhesion'">
               <strong>${user.adhesion ?? 0}</strong><br>Adhésion
             </div>
-            <div class="stat" role="button" tabindex="0" onclick="openRelations('adeptes','${myId}')">
+            <div style="cursor:pointer" onclick="location.href='relations.html?type=adeptes'">
               <strong>${user.adeptes ?? 0}</strong><br>Adeptes
             </div>
-            <div class="stat" role="button" tabindex="0" onclick="openRelations('contacts','${myId}')">
+            <div style="cursor:pointer" onclick="location.href='relations.html?type=contacts'">
               <strong>${user.contacts ?? 0}</strong><br>Contacts
             </div>
           </div>
@@ -213,27 +200,58 @@
     }
 
     /* -------------------------------------------------------
-       ✅ Affichage cartes (signedUrl + distance)
+       ✅ Ouvrir profil + enregistrer visite
+    -------------------------------------------------------- */
+    window.openProfile = async function(id) {
+      if (id !== myId) {
+        await supabase.from("visits").insert({
+          visitor_id: myId,
+          visited_id: id
+        });
+      }
+      window.location.href = "profil.html?user=" + encodeURIComponent(id);
+    };
+
+    /* -------------------------------------------------------
+       ✅ Filtrer par rayon (search_radius) avec city_lat/city_lon
+    -------------------------------------------------------- */
+    function withinMyRadius(p) {
+      const myLat = Number(myProfile?.city_lat);
+      const myLon = Number(myProfile?.city_lon);
+      const r = Number(myProfile?.search_radius ?? 20);
+
+      // si je n'ai pas de coords -> on ne filtre pas
+      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
+
+      const lat = Number(p.city_lat);
+      const lon = Number(p.city_lon);
+
+      // si l'autre n'a pas de coords -> on le cache (distance impossible)
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+
+      return distanceKm(myLat, myLon, lat, lon) <= r;
+    }
+
+    /* -------------------------------------------------------
+       ✅ Affichage cartes (avec distance)
     -------------------------------------------------------- */
     async function afficherCartes(containerId, profiles) {
       const container = document.getElementById(containerId);
       container.innerHTML = "";
 
-      const myLat = myProfile?.city_lat;
-      const myLon = myProfile?.city_lon;
+      const myLat = Number(myProfile?.city_lat);
+      const myLon = Number(myProfile?.city_lon);
 
       const cards = await Promise.all(
         (profiles || []).map(async (p) => {
           const photoUrl = await getProfilePhotoUrl(p.photo);
 
           let distTxt = "";
-          if (
-            Number.isFinite(myLat) &&
-            Number.isFinite(myLon) &&
-            Number.isFinite(p.city_lat) &&
-            Number.isFinite(p.city_lon)
-          ) {
-            const km = distanceKm(myLat, myLon, p.city_lat, p.city_lon);
+          const lat = Number(p.city_lat);
+          const lon = Number(p.city_lon);
+
+          if (Number.isFinite(myLat) && Number.isFinite(myLon) && Number.isFinite(lat) && Number.isFinite(lon)) {
+            const km = distanceKm(myLat, myLon, lat, lon);
             distTxt = ` • ${Math.round(km)} km`;
           }
 
@@ -253,97 +271,111 @@
     }
 
     /* -------------------------------------------------------
-       ✅ Voir un profil + enregistrer la visite
-    -------------------------------------------------------- */
-    window.openProfile = async function(id) {
-      if (id !== myId) {
-        await supabase.from("visits").insert({
-          visitor_id: myId,
-          visited_id: id
-        });
-      }
-      window.location.href = "profil.html?user=" + id;
-    };
-
-    /* -------------------------------------------------------
-       ✅ Filtrer par rayon (mon search_radius)
-    -------------------------------------------------------- */
-    function withinMyRadius(p) {
-      const myLat = myProfile?.city_lat;
-      const myLon = myProfile?.city_lon;
-      const r = Number(myProfile?.search_radius ?? 20);
-
-      // si je n'ai pas de coords -> pas de filtre
-      if (!Number.isFinite(myLat) || !Number.isFinite(myLon)) return true;
-
-      // si l'autre n'a pas de coords -> on le cache
-      if (!Number.isFinite(p.city_lat) || !Number.isFinite(p.city_lon)) return false;
-
-      return distanceKm(myLat, myLon, p.city_lat, p.city_lon) <= r;
-    }
-
-    /* -------------------------------------------------------
-       ✅ Suggestions (filtrées par rayon)
+       ✅ Suggestions (proches)
+       (option: tu peux aussi filtrer par "lookingFor" si tu veux)
     -------------------------------------------------------- */
     async function loadSuggestions() {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, gender, birthplace, photo, city_lat, city_lon")
         .neq("id", myId)
-        .limit(30);
+        .limit(50); // on prend large puis on filtre au rayon
 
       if (error) console.error("loadSuggestions:", error);
 
-      const filtered = (data || []).filter(withinMyRadius).slice(0, 6);
+      const filtered = (data || [])
+        .filter(withinMyRadius)
+        .slice(0, 6);
+
       await afficherCartes("suggestions", filtered);
     }
 
     /* -------------------------------------------------------
-       ✅ Utilisateurs en ligne (filtrés par rayon)
+       ✅ En ligne (table online_users)
+       - on récupère les ids online puis on fetch profiles
     -------------------------------------------------------- */
     async function loadOnline() {
-      const { data, error } = await supabase
+      const since = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+
+      const { data: onlineRows, error } = await supabase
         .from("online_users")
-        .select("user_id, profiles(id, username, gender, birthplace, photo, city_lat, city_lon)")
-        .gte("last_seen", new Date(Date.now() - 3 * 60 * 1000).toISOString());
+        .select("user_id, last_seen")
+        .gte("last_seen", since)
+        .limit(50);
 
-      if (error) console.error("loadOnline:", error);
+      if (error) {
+        console.error("loadOnline:", error);
+        return afficherCartes("en-ligne", []);
+      }
 
-      const list = (data || [])
-        .map(x => x.profiles)
-        .filter(Boolean)
-        .filter(p => p.id !== myId)
+      const ids = (onlineRows || [])
+        .map(x => x.user_id)
+        .filter(id => id && id !== myId);
+
+      if (ids.length === 0) return afficherCartes("en-ligne", []);
+
+      const { data: profs, error: pErr } = await supabase
+        .from("profiles")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
+        .in("id", ids);
+
+      if (pErr) {
+        console.error("loadOnline profiles:", pErr);
+        return afficherCartes("en-ligne", []);
+      }
+
+      const filtered = (profs || [])
         .filter(withinMyRadius)
         .slice(0, 12);
 
-      await afficherCartes("en-ligne", list);
+      await afficherCartes("en-ligne", filtered);
     }
 
     /* -------------------------------------------------------
-       ✅ Derniers visiteurs (pas de filtre)
+       ✅ Derniers visiteurs (table visits)
+       - on récupère visitor_id puis on fetch profiles
     -------------------------------------------------------- */
     async function loadVisitors() {
-      const { data, error } = await supabase
+      const { data: rows, error } = await supabase
         .from("visits")
-        .select("visitor_id, profiles(id, username, gender, birthplace, photo, city_lat, city_lon)")
+        .select("visitor_id, created_at")
         .eq("visited_id", myId)
         .order("created_at", { ascending: false })
         .limit(10);
 
-      if (error) console.error("loadVisitors:", error);
+      if (error) {
+        console.error("loadVisitors:", error);
+        return afficherCartes("visiteurs", []);
+      }
 
-      const list = (data || []).map(v => v.profiles).filter(Boolean);
-      await afficherCartes("visiteurs", list);
+      const ids = (rows || []).map(r => r.visitor_id).filter(Boolean);
+      if (ids.length === 0) return afficherCartes("visiteurs", []);
+
+      const { data: profs, error: pErr } = await supabase
+        .from("profiles")
+        .select("id, username, gender, birthplace, photo, city_lat, city_lon")
+        .in("id", ids);
+
+      if (pErr) {
+        console.error("loadVisitors profiles:", pErr);
+        return afficherCartes("visiteurs", []);
+      }
+
+      // garde l’ordre des visites
+      const map = new Map((profs || []).map(p => [p.id, p]));
+      const ordered = ids.map(id => map.get(id)).filter(Boolean);
+
+      await afficherCartes("visiteurs", ordered);
     }
 
     /* -------------------------------------------------------
-       ✅ Statut en ligne
+       ✅ Statut en ligne (update online_users)
     -------------------------------------------------------- */
     async function updateOnlineStatus() {
       await supabase.from("online_users").upsert({
         user_id: myId,
         last_seen: new Date().toISOString()
-      });
+      }, { onConflict: "user_id" });
     }
     setInterval(updateOnlineStatus, 20000);
 
@@ -362,6 +394,10 @@
     await loadSuggestions();
     await loadOnline();
     await loadVisitors();
+
+    // ✅ refresh online + suggestions parfois (optionnel)
+    setInterval(loadOnline, 30000);
+    setInterval(loadSuggestions, 60000);
   </script>
 
 </body>
