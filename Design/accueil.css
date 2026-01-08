@@ -373,3 +373,54 @@ img{
     -webkit-tap-highlight-color: transparent;
   }
 }
+@media (max-width: 1000px) {
+  .layout{
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+
+  /* ✅ Sidebar gauche devient un bloc en haut */
+  .sidebar-left{
+    display: block;
+    order: 1;
+  }
+
+  /* ✅ Le contenu principal dessous */
+  .main-content{
+    order: 2;
+  }
+
+  /* ✅ Sidebar droite devient un menu horizontal */
+  .sidebar-right{
+    display: flex;
+    order: 3;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 10px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    backdrop-filter: blur(10px);
+  }
+
+  .sidebar-right a{
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 10px 14px;
+    border-radius: 999px;
+  }
+
+  /* ✅ grille profils plus adaptée mobile */
+  .profiles-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .profiles-grid{
+    grid-template-columns: 1fr;
+  }
+}
