@@ -1,944 +1,319 @@
-/* === GÉNÉNÉRAL === */
-body.index-page {
+/* ==========================================
+   DESIGN/STYLE.CSS
+   ✅ Pour pages "auth" uniquement :
+   - index.html (connexion)
+   - inscription.html (signup)
+   (Ne pas utiliser pour accueil/profil/photos)
+========================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+img { max-width: 100%; height: auto; display: block; }
+
+/* ===== BASE ===== */
+:root{
+  --overlay: rgba(255,255,255,0.72);
+  --dark: rgba(51,51,51,0.88);
+  --dark-2: rgba(51,51,51,0.92);
+  --text: #333;
+  --muted: #666;
+  --card: rgba(255,255,255,0.92);
+  --shadow: 0 10px 25px rgba(0,0,0,0.18);
+  --radius: 16px;
+  --pad: 18px;
+}
+
+body{
+  font-family: 'Poppins', Arial, sans-serif;
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ==========================================
+   ✅ PAGE INDEX (connexion)
+   Utilise : <body class="index-page">
+========================================== */
+
+body.index-page{
   margin: 0;
   padding: 0;
-  font-family: Arial, sans-serif;
   background-image: url('../Image/accueil.jpg');
   background-size: cover;
   background-position: center;
-  height: 100vh;
-  color: #333;
+  background-attachment: fixed;
   position: relative;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Voile blanc semi-transparent pour lisibilité */
-body.index-page::before {
+/* Voile blanc */
+body.index-page::before{
   content: "";
   position: absolute;
   inset: 0;
-  background-color: rgba(255, 255, 255, 0.7);
+  background-color: var(--overlay);
   z-index: 0;
 }
 
-/* Tout le contenu au-dessus du voile */
-header, main, footer {
+/* Tout au-dessus du voile */
+.site-header, main, footer{
   position: relative;
   z-index: 1;
 }
 
-/* === HEADER === */
-.site-header {
-  background-color: rgba(51, 51, 51, 0.85);
-  color: white;
-  padding: 15px 30px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo {
-  font-size: 28px;
-  font-weight: bold;
-}
-
-.main-nav a {
-  color: white;
-  text-decoration: none;
-  margin: 0 12px;
-  font-weight: bold;
-}
-
-.main-nav a:hover {
-  text-decoration: underline;
-}
-
-/* === FORMULAIRE ACCUEIL === */
-main {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: calc(100vh - 140px);
-  text-align: center;
-  padding: 20px;
-}
-
-main h1 {
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #444;
-}
-
-form {
-  background-color: white;
-  padding: 25px;
-  border-radius: 15px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  width: 90%;
-  max-width: 350px;
-}
-
-input[type="text"],
-input[type="password"] {
-  padding: 10px;
-  border-radius: 10px;
-  border: 1px solid #ccc;
-  font-size: 16px;
-}
-
-button[type="submit"] {
-  background-color: #ff69b4;
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 10px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-button[type="submit"]:hover {
-  background-color: #ff1493;
-}
-
-.btn-inscription {
-  display: inline-block;
-  background-color: #7b68ee;
-  color: white;
-  padding: 10px;
-  border-radius: 20px;
-  text-decoration: none;
-  font-size: 16px;
-  transition: background 0.3s;
-  text-align: center;
-}
-
-.btn-inscription:hover {
-  background-color: #6a5acd;
-}
-
-/* === FOOTER === */
-footer {
-  background-color: rgba(51, 51, 51, 0.9);
-  color: white;
-  text-align: center;
-  padding: 15px;
-  font-size: 14px;
-  position: relative;
-  z-index: 1;
-}
-
-footer a {
-  color: #ddd;
-  text-decoration: none;
-  margin: 0 5px;
-}
-
-footer a:hover {
-  text-decoration: underline;
-}
-
-/* === RESET DE BASE === */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: Arial, sans-serif;
-  background-color: #fff;
-  color: #333;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* === HEADER === */
-.header {
+/* ===== HEADER (index) ===== */
+.site-header{
   width: 100%;
-  background-color: rgba(51, 51, 51, 0.9);
+  background-color: var(--dark);
   color: white;
-  padding: 15px 30px;
+  padding: 14px 26px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
-.logo {
-  font-size: 28px;
-  font-weight: bold;
+.site-header .logo{
+  font-size: 24px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.search-bar {
+.main-nav{
   display: flex;
-  flex: 1;
+  gap: 14px;
+  flex-wrap: wrap;
   justify-content: center;
-  margin: 10px 0;
 }
 
-.search-bar input {
-  padding: 8px;
-  border: none;
-  border-radius: 20px 0 0 20px;
-  font-size: 14px;
-  width: 200px;
-}
-
-.search-bar button {
-  padding: 8px 12px;
-  border: none;
-  background-color: #444;
-  color: white;
-  border-radius: 0 20px 20px 0;
-  cursor: pointer;
-}
-
-.nav-links {
-  display: flex;
-  gap: 15px;
-}
-
-.nav-links a {
+.main-nav a{
   color: white;
   text-decoration: none;
-  font-weight: bold;
+  font-weight: 600;
+  opacity: .95;
 }
 
-.nav-links a:hover {
+.main-nav a:hover{
   text-decoration: underline;
 }
 
-/* === LAYOUT PRINCIPAL === */
-.layout {
-  display: flex;
+/* ===== CONTENU (index) ===== */
+body.index-page main{
   flex: 1;
-  gap: 20px;
-  padding: 30px;
-  flex-wrap: wrap;
-}
-
-/* === MAIN CONTENT AVEC SECTIONS === */
-.main-content {
-  flex: 3;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  align-items: flex-start;
-}
-
-/* === SECTION STYLE === */
-.section {
-  flex: 1;
-  min-width: 280px;
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-
-.section-title {
-  font-size: 18px;
-  font-weight: bold;
-  color: #333;
-  margin-bottom: 10px;
-  border-bottom: 2px solid #ddd;
-  padding-bottom: 5px;
-}
-
-.profile-cards {
+  width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-.profile-card {
-  background-color: white;
-  padding: 10px;
-  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  color: #333;
-  font-weight: 500;
+  padding: 22px 16px;
 }
 
-/* === SIDEBAR DROITE === */
-.sidebar-right {
-  flex: 1;
-  min-width: 200px;
-  background-color: #efefef;
-  padding: 20px;
-  border-radius: 10px;
+body.index-page main h1{
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #2b2b2b;
+}
+
+body.index-page main p{
+  margin-bottom: 18px;
+  color: var(--muted);
+}
+
+/* ===== FORM (index) ===== */
+body.index-page form{
+  background-color: var(--card);
+  padding: 22px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: 100%;
+  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  font-weight: bold;
-  height: fit-content;
+  backdrop-filter: blur(6px);
 }
 
-.sidebar-right a {
-  color: #333;
+body.index-page input[type="text"],
+body.index-page input[type="password"],
+body.index-page input[type="email"]{
+  padding: 11px 12px;
+  border-radius: 12px;
+  border: 1px solid #d7d7d7;
+  font-size: 15px;
+  outline: none;
+}
+
+body.index-page input:focus{
+  border-color: #ff69b4;
+  box-shadow: 0 0 0 4px rgba(255,105,180,0.18);
+}
+
+/* Bouton connexion */
+body.index-page button[type="submit"]{
+  background-color: #ff69b4;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 11px;
+  font-size: 15px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform .15s ease, background .2s ease;
+}
+body.index-page button[type="submit"]:hover{
+  background-color: #ff1493;
+  transform: translateY(-1px);
+}
+
+/* Bouton inscription (lien) */
+body.index-page .btn-inscription{
+  display: inline-block;
+  background-color: #7b68ee;
+  color: white;
+  padding: 11px;
+  border-radius: 999px;
   text-decoration: none;
-  padding: 8px;
-  border-radius: 6px;
-  transition: background-color 0.3s;
+  font-size: 15px;
+  transition: transform .15s ease, background .2s ease;
+  text-align: center;
+  font-weight: 600;
+}
+body.index-page .btn-inscription:hover{
+  background-color: #6a5acd;
+  transform: translateY(-1px);
 }
 
-.sidebar-right a:hover {
-  background-color: #ddd;
-}
-
-/* === FOOTER === */
-.footer {
-  width: 100%;
-  background-color: rgba(51, 51, 51, 0.9);
+/* ===== FOOTER (index) ===== */
+body.index-page footer{
+  background-color: var(--dark-2);
   color: white;
   text-align: center;
-  padding: 20px 15px;
-  font-size: 14px;
-  margin-top: auto;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 15px;
+  padding: 14px 12px;
+  font-size: 13px;
 }
 
-.footer a {
+body.index-page footer a{
   color: #ddd;
   text-decoration: none;
+  margin: 0 6px;
 }
-
-.footer a:hover {
+body.index-page footer a:hover{
   text-decoration: underline;
 }
 
-/* === RESPONSIVE === */
-@media (max-width: 900px) {
-  .layout {
-    flex-direction: column;
-  }
+/* ==========================================
+   ✅ PAGE INSCRIPTION (signup)
+   Ton inscription.html utilise :
+   <main class="container"> + .form-section etc.
+========================================== */
 
-  .main-content {
-    flex-direction: column;
-  }
-
-  .section {
-    width: 100%;
-  }
-
-  .sidebar-right {
-    width: 100%;
-  }
-
-  .search-bar {
-    order: 2;
-    justify-content: center;
-    margin: 10px 0;
-  }
-
-  .nav-links {
-    order: 3;
-    justify-content: center;
-    width: 100%;
-  }
-}
-
-/* Reset basique */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-}
-
-body {
-  background-color: white;
-  display: flex;
-  justify-content: center;
-  padding: 40px 20px;
-}
-
-form {
+.container{
   width: 100%;
-  max-width: 400px;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-}
-
-/* Champs de formulaire */
-input,
-select,
-button {
-  padding: 10px;
-  font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-/* Libellés */
-label {
-  font-weight: bold;
-  margin-top: 10px;
-}
-
-/* Case à cocher + CGV */
-.checkbox-container {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  font-size: 14px;
-}
-
-/* Bouton de soumission */
-button {
-  background-color: #007bff;
-  color: white;
-  border: none;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #0056b3;
-}
-
-/* Enlève le centrage général */
-body {
-  margin: 0;
-  padding: 0;
-  font-family: Arial, sans-serif;
-}
-
-/* HEADER + FOOTER sur toute la largeur */
-.header, .footer {
-  width: 100%;
-  padding: 15px 30px;
-  background-color: #333;
-  color: white;
-  display: flex;
-  align-items: center;
-  box-sizing: border-box;
-}
-
-/* Pour que tout le layout remplisse bien l'écran */
-.layout {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  padding: 40px 30px;
-  width: 100%;
-  box-sizing: border-box;
-}
-
-/* Sidebar vraiment à droite */
-.sidebar-right {
-  width: 250px;
-  background-color: #f2f2f2;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  margin-left: 40px;
-}
-
-.main-content {
-  flex: 3;
-}
-
-.page-title {
-  font-size: 28px;
-  margin-bottom: 20px;
-  color: #222;
-}
-
-/* MEMBRES BLOQUÉS */
-.blocked-list {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-}
-
-.blocked-member {
-  display: flex;
-  align-items: center;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.08);
-  padding: 15px;
-  transition: transform 0.2s;
-}
-
-.blocked-member:hover {
-  transform: scale(1.01);
-}
-
-.avatar {
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  object-fit: cover;
-  margin-right: 15px;
-  border: 2px solid #007bff;
-}
-
-.member-info {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex: 1;
-}
-
-.username {
-  font-size: 18px;
-  font-weight: 500;
-}
-
-.unblock-btn {
-  background-color: #dc3545;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.unblock-btn:hover {
-  background-color: #c82333;
-}
-
-.layout {
-  display: flex;
-  padding: 30px;
-  max-width: 1200px;
-  margin: auto;
-}
-
-.main-content {
-  flex: 3;
-}
-
-.main-content h2 {
-  font-size: 24px;
-  margin-bottom: 20px;
-  color: #333;
-}
-
-.photo-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.photo-slot {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 1 / 1;
-  background-color: #fff;
-  border: 2px dashed #aaa;
-  border-radius: 10px;
-  overflow: hidden;
-  cursor: pointer;
-  display: flex;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.3s;
+  padding: 28px 16px;
+  background: linear-gradient(180deg, #ffffff, #f5f6fb);
 }
 
-.photo-slot:hover {
-  border-color: #0077cc;
-}
-
-.photo-placeholder {
-  font-size: 18px;
-  color: #555;
+.container h1{
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 10px;
   text-align: center;
-  pointer-events: none;
 }
 
-.photo-input {
-  display: none;
+.container p{
+  color: var(--muted);
+  text-align: center;
+  margin-bottom: 18px;
 }
 
-.photo-slot img {
-  position: absolute;
-  top: 0; left: 0;
+.form-section{
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
 }
 
-/* Empêche la grille de "déborder" sur header/footer */
-.layout { align-items: flex-start; }
-.main-content { min-height: 0; }
-.photo-grid { display: grid; gap: 16px; }
+.form-section h2{
+  font-size: 16px;
+  margin-bottom: 14px;
+}
 
-/* Images dans les slots */
-.photo-slot { position: relative; overflow: hidden; }
-.photo-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Form signup */
+#signup-form{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
 
-/* Bouton supprimer */
-.delete-photo { position: absolute; top: 10px; right: 10px; z-index: 2; }
+#signup-form input,
+#signup-form select{
+  padding: 11px 12px;
+  font-size: 15px;
+  border: 1px solid #d7d7d7;
+  border-radius: 12px;
+  outline: none;
+  background: #fff;
+}
 
-/* Modal zoom */
-.photo-modal {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.75);
-  display: none;
+#signup-form input:focus,
+#signup-form select:focus{
+  border-color: #7b68ee;
+  box-shadow: 0 0 0 4px rgba(123,104,238,0.18);
+}
+
+#signup-form label{
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  margin-top: 4px;
+}
+
+.checkboxes{
+  display: flex;
   align-items: center;
-  justify-content: center;
-  z-index: 9999;
-}
-.photo-modal.open { display: flex; }
-
-.photo-modal-img {
-  max-width: 90vw;
-  max-height: 90vh;
+  gap: 10px;
+  font-size: 13px;
+  color: #444;
 }
 
-.photo-modal-close {
-  position: fixed;
-  top: 18px;
-  right: 18px;
-  z-index: 10000;
+#signup-form button[type="submit"]{
+  margin-top: 4px;
+  background: #007bff;
+  border: none;
+  color: white;
+  padding: 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: transform .15s ease, background .2s ease;
 }
 
-/* ===========================================================
-   ✅ FIX FINAL (MES PHOTOS) :
-   - On garde le header visible
-   - On évite que la 1ère ligne passe "sous" le header
-   - Cases plus petites + bien alignées
-   IMPORTANT : ce bloc ÉCRASE tes règles précédentes
-   =========================================================== */
-
-/* 1) Pour tes pages app, on force le body en colonne (pas centré) */
-body {
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: flex-start !important;
-  margin: 0 !important;
-  padding: 0 !important;
+#signup-form button[type="submit"]:hover{
+  background: #0056b3;
+  transform: translateY(-1px);
 }
 
-/* 2) Header en sticky (pas fixed) => pas de chevauchement */
-.header {
-  position: sticky !important;
-  top: 0 !important;
-  z-index: 9999 !important;
+/* ===== Responsive auth ===== */
+@media (max-width: 520px){
+  .site-header{ padding: 12px 14px; }
+  .site-header .logo{ font-size: 20px; }
+  body.index-page form{ padding: 18px; }
+  .form-section{ padding: 18px; }
 }
 
-/* 3) Layout : on laisse un padding normal (pas énorme) */
-.layout {
-  width: 100% !important;
-  max-width: 1200px !important;
-  margin: 0 auto !important;
-  padding: 30px 30px !important;
-  align-items: flex-start !important;
-  box-sizing: border-box !important;
+@media (max-width: 380px){
+  body.index-page main h1{ font-size: 20px; }
+  .container h1{ font-size: 20px; }
 }
-
-/* 4) Mes Photos : grille + cases plus petites et alignées */
-.photo-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)) !important;
-  gap: 14px !important;
-  width: 100% !important;
-  margin-top: 12px !important;
-}
-
-/* 5) Cases et images */
-.photo-slot {
-  aspect-ratio: 1 / 1 !important;
-  border-radius: 12px !important;
-  overflow: hidden !important;
-}
-
-.photo-slot img,
-.photo-img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-}
-
-/* 6) Bouton supprimer plus petit */
-.delete-photo {
-  top: 8px !important;
-  right: 8px !important;
-  padding: 6px 10px !important;
-  border-radius: 8px !important;
-  font-size: 13px !important;
-  z-index: 3 !important;
-}
-
-/* ===========================================================
-   ✅ FIX SIDEBAR + GRID (ANTI-CACHE DERRIÈRE LES PHOTOS)
-   =========================================================== */
-
-/* Empêche le wrap : main + sidebar restent en 2 colonnes */
-.layout {
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: 30px !important;
-}
-
-/* Important pour que la grid ne déborde jamais */
-.main-content {
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-}
-
-/* Sidebar toujours visible */
-.sidebar-right {
-  flex: 0 0 280px !important;
-  width: 280px !important;
-  min-width: 280px !important;
-  position: sticky !important;
-  top: 110px !important;
-  z-index: 10 !important;
-  align-self: flex-start !important;
-}
-
-/* Grid photos contenue dans le main */
-.photo-grid {
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
-}
-
-/* Responsive mobile : sidebar en dessous */
-@media (max-width: 900px){
-  .layout { flex-wrap: wrap !important; }
-  .sidebar-right{
-    position: static !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    flex: 1 1 100% !important;
-    top: auto !important;
-  }
-  .photo-grid{
-    grid-template-columns: repeat(2, minmax(140px, 1fr)) !important;
-  }
-}
-
-/* ===========================================================
-   ✅ DERNIER FIX (PRIORITÉ MAX) :
-   ➜ Réserve la place de la sidebar pour que la grid ne passe JAMAIS dessous
-   =========================================================== */
-
-:root{
-  --sidebar-w: 320px;
-  --layout-gap: 30px;
-}
-
-.layout{
-  max-width: 1400px !important;
-  width: 100% !important;
-  margin: 0 auto !important;
-
-  display: flex !important;
-  flex-wrap: nowrap !important;
-  gap: var(--layout-gap) !important;
-  align-items: flex-start !important;
-}
-
-/* le main a une largeur MAX, donc il ne peut pas passer sous la sidebar */
-.main-content{
-  flex: 1 1 auto !important;
-  min-width: 0 !important;
-  max-width: calc(100% - var(--sidebar-w) - var(--layout-gap)) !important;
-}
-
-/* sidebar complètement à droite, largeur fixe */
-.sidebar-right{
-  margin-left: auto !important;
-  flex: 0 0 var(--sidebar-w) !important;
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-w) !important;
-
-  position: sticky !important;
-  top: 110px !important;
-  z-index: 50 !important;
-  align-self: flex-start !important;
-}
-
-/* grid bloquée dans le main */
-.photo-grid{
-  width: 100% !important;
-  max-width: 100% !important;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)) !important;
-  gap: 14px !important;
-}
-
-@media (max-width: 900px){
-  .layout{ flex-wrap: wrap !important; }
-  .main-content{ max-width: 100% !important; }
-  .sidebar-right{
-    position: static !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    flex: 1 1 100% !important;
-    margin-left: 0 !important;
-    top: auto !important;
-  }
-}
-
-/* ===========================================================
-   ✅ FIX ULTIME (SCROLL + SIDEBAR JAMAIS SUR LES PHOTOS)
-   ➜ On corrige le vrai problème : "main" est bloqué en 100vh
-   ➜ On force le layout en GRID 2 colonnes (réserve la place)
-   (CE BLOC DOIT RESTER TOUT EN BAS)
-   =========================================================== */
-
-:root{
-  --sidebar-w: 320px;
-  --layout-gap: 30px;
-}
-
-/* IMPORTANT : sur tes pages app, ton main est <main class="main-content"> */
-main.main-content{
-  height: auto !important;
-  min-height: 0 !important;
-  display: block !important;
-  align-items: stretch !important;
-  justify-content: flex-start !important;
-  padding: 0 !important; /* le padding est déjà sur .layout */
-}
-
-/* Scroll normal */
-html, body{
-  height: auto !important;
-  overflow-y: auto !important;
-}
-
-/* Layout en GRID => la sidebar a toujours sa place, donc pas d'overlay */
-.layout{
-  display: grid !important;
-  grid-template-columns: minmax(0, 1fr) var(--sidebar-w) !important;
-  column-gap: var(--layout-gap) !important;
-
-  width: 100% !important;
-  max-width: 1400px !important;
-  margin: 0 auto !important;
-  align-items: start !important;
-}
-
-/* Main dans sa colonne */
-.main-content{
-  min-width: 0 !important;
-  width: 100% !important;
-  display: block !important;
-}
-
-/* Sidebar dans sa colonne */
-.sidebar-right{
-  width: var(--sidebar-w) !important;
-  min-width: var(--sidebar-w) !important;
-  margin-left: 0 !important; /* inutile en grid */
-  position: sticky !important;
-  top: 110px !important;
-  z-index: 5 !important;
-  align-self: start !important;
-}
-
-/* La grille ne déborde pas */
-.photo-grid{
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-/* Responsive : sidebar dessous */
-@media (max-width: 900px){
-  .layout{
-    display: block !important;
-  }
-  .sidebar-right{
-    position: static !important;
-    width: 100% !important;
-    min-width: 0 !important;
-    top: auto !important;
-    margin-top: 20px !important;
-  }
-}
-/* =========================
-   RESPONSIVE (BASE)
-   À coller en bas du fichier
-========================= */
-
-:root{
-  --container-pad: 16px;
-  --gap: 16px;
-}
-
-img{
-  max-width: 100%;
-  height: auto;
-}
-
-/* Empêche les blocs de déborder sur mobile */
-*{
-  min-width: 0;
-}
-
-/* ====== TABLET (<= 1000px) ====== */
-@media (max-width: 1000px){
-  .layout{
-    grid-template-columns: 1fr !important;
-    padding: 16px !important;
-    gap: var(--gap) !important;
-  }
-
-  /* cache les sidebars si tu utilises .sidebar-left/.sidebar-right */
-  .sidebar-left,
-  .sidebar-right{
-    display: none !important;
-  }
-
-  .main-content{
-    width: 100% !important;
-  }
-}
-
-/* ====== MOBILE (<= 600px) ====== */
-@media (max-width: 600px){
-  .header{
-    padding: 12px var(--container-pad) !important;
-    gap: 10px;
-    flex-wrap: wrap; /* header passe en 2 lignes si besoin */
-  }
-
-  .search-bar{
-    width: 100% !important;
-  }
-  .search-bar input{
-    width: 100% !important;
-  }
-
-  .nav-links{
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  /* Grilles : cartes plus petites, 2 colonnes sur mobile */
-  .profiles-grid{
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
-  }
-
-  /* Images de cartes plus petites */
-  .profile-card img{
-    height: 140px !important;
-  }
-
-  /* Boutons plus “touch friendly” */
-  button, .btn, a{
-    -webkit-tap-highlight-color: transparent;
-  }
-}
-
