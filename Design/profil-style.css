@@ -1,7 +1,15 @@
 /* ====== RESET ====== */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; min-width: 0; }
 html, body { height: 100%; }
-body { font-family: Arial, sans-serif; color: #333; background-color: #fff; display: flex; flex-direction: column; }
+body {
+  font-family: Arial, sans-serif;
+  color: #333;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+}
+
+img { max-width: 100%; height: auto; display: block; }
 
 /* ====== HEADER (même que Mes photos) ====== */
 .header {
@@ -13,16 +21,28 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
+  gap: 10px;
 }
-.logo { font-size: 28px; font-weight: bold; }
-.search-bar { display: flex; flex: 1; justify-content: center; margin: 10px 0; }
+
+.logo { font-size: 28px; font-weight: bold; white-space: nowrap; }
+
+.search-bar {
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  margin: 10px 0;
+  min-width: 220px;
+}
+
 .search-bar input {
   padding: 8px;
   border: none;
   border-radius: 20px 0 0 20px;
   font-size: 14px;
   width: 220px;
+  max-width: 100%;
 }
+
 .search-bar button {
   padding: 8px 12px;
   border: none;
@@ -31,7 +51,8 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   border-radius: 0 20px 20px 0;
   cursor: pointer;
 }
-.nav-links { display: flex; gap: 15px; }
+
+.nav-links { display: flex; gap: 15px; flex-wrap: wrap; justify-content: center; }
 .nav-links a { color: white; text-decoration: none; font-weight: bold; }
 .nav-links a:hover { text-decoration: underline; }
 
@@ -44,7 +65,9 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   width: 100%;
   margin: 0 auto;
   flex: 1;
+  align-items: flex-start;
 }
+
 .main-content {
   flex: 3;
   display: grid;
@@ -60,6 +83,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.08);
 }
+
 .section-title {
   font-size: 18px;
   font-weight: bold;
@@ -69,12 +93,13 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   padding-bottom: 6px;
 }
 
-/* ====== GRILLE PHOTOS (même style que Mes photos) ====== */
+/* ====== GRILLE PHOTOS ====== */
 .photo-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* comme tes captures */
+  grid-template-columns: repeat(2, 1fr);
   gap: 20px;
 }
+
 .photo-slot {
   position: relative;
   width: 100%;
@@ -89,14 +114,18 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   justify-content: center;
   transition: border-color 0.3s;
 }
+
 .photo-slot:hover { border-color: #0077cc; }
+
 .photo-placeholder {
   font-size: 18px;
   color: #555;
   text-align: center;
   pointer-events: none;
 }
+
 .photo-input { display: none; }
+
 .photo-slot img {
   position: absolute;
   inset: 0;
@@ -105,7 +134,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   object-fit: cover;
 }
 
-/* ====== PROFIL (photo ronde + infos) ====== */
+/* ====== PROFIL ====== */
 .profile-photo-wrapper {
   position: relative;
   width: 160px;
@@ -120,6 +149,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   overflow: hidden;
   box-shadow: 0 0 10px rgba(0,0,0,0.12);
 }
+
 .profile-photo-wrapper img {
   width: 150px;
   height: 150px;
@@ -127,6 +157,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   object-fit: cover;
   display: block;
 }
+
 .photo-overlay {
   position: absolute;
   inset: 0;
@@ -145,6 +176,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
 
 .infos-profil { list-style: none; margin-top: 12px; padding: 0; }
 .infos-profil li { margin-bottom: 8px; font-size: 15px; }
+
 .btn-primary {
   padding: 10px 14px;
   background-color: #007bff;
@@ -169,6 +201,7 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   height: fit-content;
   font-weight: bold;
 }
+
 .sidebar-right a {
   color: #333;
   text-decoration: none;
@@ -192,92 +225,86 @@ body { font-family: Arial, sans-serif; color: #333; background-color: #fff; disp
   justify-content: center;
   gap: 15px;
 }
+
 .footer a { color: #ddd; text-decoration: none; }
 .footer a:hover { text-decoration: underline; }
 
-/* ====== RESPONSIVE ====== */
-@media (max-width: 1024px) {
-  .main-content { grid-template-columns: 1fr; }
-}
-@media (max-width: 700px) {
-  .search-bar { order: 2; width: 100%; justify-content: center; }
-  .nav-links { order: 3; width: 100%; justify-content: center; margin-top: 8px; }
-  .layout { flex-direction: column; }
-}
 /* =========================
-   RESPONSIVE (BASE)
-   À coller en bas du fichier
+   RESPONSIVE (TABLET + MOBILE)
+   ✅ on ne cache PLUS la sidebar
 ========================= */
 
-:root{
-  --container-pad: 16px;
-  --gap: 16px;
-}
-
-img{
-  max-width: 100%;
-  height: auto;
-}
-
-/* Empêche les blocs de déborder sur mobile */
-*{
-  min-width: 0;
-}
-
-/* ====== TABLET (<= 1000px) ====== */
-@media (max-width: 1000px){
+/* tablette */
+@media (max-width: 1024px) {
   .layout{
-    grid-template-columns: 1fr !important;
-    padding: 16px !important;
-    gap: var(--gap) !important;
-  }
-
-  /* cache les sidebars si tu utilises .sidebar-left/.sidebar-right */
-  .sidebar-left,
-  .sidebar-right{
-    display: none !important;
+    flex-direction: column;
+    padding: 16px;
+    gap: 16px;
   }
 
   .main-content{
-    width: 100% !important;
+    grid-template-columns: 1fr; /* empile les sections */
+  }
+
+  /* sidebar devient un menu horizontal en bas */
+  .sidebar-right{
+    width: 100%;
+    min-width: 0;
+    flex-direction: row;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 12px;
+    border-radius: 12px;
+    height: auto;
+  }
+  .sidebar-right::-webkit-scrollbar{ display:none; }
+  .sidebar-right a{
+    flex: 0 0 auto;
+    white-space: nowrap;
+    padding: 10px 12px;
+    border-radius: 999px;
+    background: #fff;
   }
 }
 
-/* ====== MOBILE (<= 600px) ====== */
-@media (max-width: 600px){
+/* mobile */
+@media (max-width: 700px) {
   .header{
-    padding: 12px var(--container-pad) !important;
-    gap: 10px;
-    flex-wrap: wrap; /* header passe en 2 lignes si besoin */
+    padding: 12px 16px;
   }
 
   .search-bar{
-    width: 100% !important;
+    order: 2;
+    width: 100%;
+    justify-content: center;
+    margin: 0;
+    min-width: 0;
   }
+
   .search-bar input{
-    width: 100% !important;
+    width: 100%;
+    max-width: 520px;
   }
 
   .nav-links{
+    order: 3;
     width: 100%;
-    display: flex;
     justify-content: space-between;
-    gap: 10px;
+    gap: 12px;
+    margin-top: 6px;
   }
 
-  /* Grilles : cartes plus petites, 2 colonnes sur mobile */
-  .profiles-grid{
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-    gap: 12px !important;
+  .photo-grid{
+    grid-template-columns: 1fr; /* 1 photo par ligne sur petits écrans */
+    gap: 14px;
   }
 
-  /* Images de cartes plus petites */
-  .profile-card img{
-    height: 140px !important;
+  .profile-photo-wrapper{
+    width: 140px;
+    height: 140px;
   }
-
-  /* Boutons plus “touch friendly” */
-  button, .btn, a{
-    -webkit-tap-highlight-color: transparent;
+  .profile-photo-wrapper img{
+    width: 130px;
+    height: 130px;
   }
 }
