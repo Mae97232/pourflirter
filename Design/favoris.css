@@ -385,3 +385,77 @@ body{
     text-align: center;
   }
 }
+/* =========================
+   FIX iPhone - search géante
+   (favoris + parametre)
+========================= */
+
+/* 1) Empêche Safari de faire gonfler les flex items */
+.header{
+  flex-wrap: wrap;
+}
+
+.search-bar{
+  flex: 1 1 320px;
+  width: 100%;
+  max-width: 520px;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  /* ✅ hauteur FIXE => plus de cercle */
+  height: 44px;
+  max-height: 44px;
+
+  padding: 0 10px;
+  border-radius: 14px; /* ✅ plus stable que 999px sur iOS */
+}
+
+/* si tu as un bouton loupe */
+.search-bar button{
+  height: 32px;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* l’input */
+.search-bar input{
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+
+  height: 44px;
+  line-height: 44px;
+
+  padding: 0 8px;
+  border: none;
+  outline: none;
+
+  /* ✅ évite les styles iOS */
+  -webkit-appearance: none;
+  appearance: none;
+
+  /* ✅ évite le zoom iOS */
+  font-size: 16px;
+}
+
+/* Mobile : tout bien aligné */
+@media (max-width: 768px){
+  .header{
+    position: relative; /* évite bug sticky iOS */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav-links{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-bar{
+    max-width: 100%;
+    margin: 0 auto;
+  }
+}
