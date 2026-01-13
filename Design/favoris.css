@@ -396,3 +396,4 @@ body{
     padding: 7px 10px;
   }
 }
+body { outline: 10px solid red !important; }
