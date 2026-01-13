@@ -1,16 +1,16 @@
 /* =========================================================
-   ✅ STYLE - MES FAVORIS (mes-favoris.html)
+   ✅ Design/favoris.css
    - même look que mes-photos / profil
    - responsive mobile/tablette
-   ✅ FIX: Déconnexion coupé à droite (overflow)
+   ✅ FIX: "Déconnexion" coupé à droite → header wrap + nav full width
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-/* ✅ IMPORTANT : enlève le contour de debug */
-body{ outline: none !important; }
+/* ===== RESET / BASE ===== */
+*{ margin:0; padding:0; box-sizing:border-box; }
+img{ max-width:100%; height:auto; display:block; }
 
-/* BASE */
 :root{
   --bg: #f5f6fb;
   --card: #ffffff;
@@ -54,15 +54,14 @@ body{
   background: var(--dark);
   color:#fff;
 
-  /* un poil plus de padding à droite pour éviter la coupe */
-  padding: 12px 22px 12px 18px;
+  padding: 12px 18px;
 
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap: 14px;
 
-  /* ✅ FIX PRINCIPAL : si ça manque de place, ça passe à la ligne */
+  /* ✅ FIX: empêche la nav de sortir à droite */
   flex-wrap: wrap;
 }
 
@@ -77,8 +76,9 @@ body{
   text-decoration: none;
 }
 
+/* Search */
 .search-bar{
-  /* ✅ FIX : la search peut rétrécir au lieu de pousser la nav dehors */
+  /* ✅ FIX: peut rétrécir au lieu de pousser la nav hors écran */
   flex: 1 1 320px;
   max-width: 520px;
   min-width: 220px;
@@ -94,7 +94,7 @@ body{
 
 .search-bar input{
   flex: 1;
-  min-width: 0; /* IMPORTANT: empêche le débordement */
+  min-width: 0; /* ✅ important anti overflow */
   border: none;
   outline: none;
   background: transparent;
@@ -123,6 +123,7 @@ body{
   transform: translateY(-1px);
 }
 
+/* Nav */
 .nav-links{
   display:flex;
   align-items:center;
@@ -130,12 +131,12 @@ body{
   flex-wrap: wrap;
   justify-content: flex-end;
 
-  /* ✅ FIX : la nav ne doit jamais sortir à droite */
-  flex: 0 1 auto;
-  max-width: 100%;
+  /* ✅ autorise le calcul de largeur sans débordement */
   min-width: 0;
+  max-width: 100%;
 }
 
+/* ✅ empêche "Déconnexion" d'être coupé */
 .nav-links a{
   color:#fff;
   text-decoration:none;
@@ -150,8 +151,7 @@ body{
   text-decoration: underline;
 }
 
-/* ✅ FIX SPÉCIAL : sur largeur “moyenne” (comme ta capture),
-   la nav passe en dessous au lieu d’être coupée */
+/* ✅ FIX: sur largeur “moyenne” (comme ta capture), la nav passe en dessous */
 @media (max-width: 1150px){
   .nav-links{
     width: 100%;
@@ -264,6 +264,11 @@ body{
   border-radius: 999px;
   object-fit: cover;
   border: 2px solid rgba(59,130,246,0.25);
+  flex-shrink: 0;
+}
+
+.profile-info{
+  min-width: 0;
 }
 
 .profile-info p{
@@ -327,9 +332,7 @@ body{
 
 /* Sur écran moyen, on réduit un peu la search pour laisser la place à la nav */
 @media (max-width: 900px){
-  .search-bar{
-    max-width: 420px;
-  }
+  .search-bar{ max-width: 420px; }
 }
 
 @media (max-width: 768px){
