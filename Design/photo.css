@@ -1,0 +1,435 @@
+/* =========================================================
+   DESIGN/STYLE.CSS (ajout pour mes-photos.html + pages internes)
+   ✅ Ne touche pas tes pages auth (index/inscription) car on
+   cible des classes : .header .layout .photo-grid etc.
+========================================================= */
+
+/* ===== RESET + BASE ===== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+*{ margin:0; padding:0; box-sizing:border-box; }
+img{ max-width:100%; height:auto; display:block; }
+
+:root{
+  --bg: #f5f6fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted:#6b7280;
+
+  --dark: rgba(17,24,39,0.92);
+  --dark-2: rgba(17,24,39,0.96);
+
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 12px 28px rgba(0,0,0,0.14);
+  --radius: 16px;
+
+  --primary: #3b82f6;
+  --danger: #ef4444;
+
+  /* alimenté par ton JS syncSpaces() */
+  --header-h: 64px;
+  --footer-h: 52px;
+}
+
+html, body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+}
+
+body{
+  font-family:'Poppins', Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  min-height:100vh;
+}
+
+/* =========================================================
+   HEADER (comme ton croquis)
+========================================================= */
+.header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: var(--dark);
+  color:#fff;
+  padding: 12px 18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+}
+
+.header .logo{
+  font-weight: 700;
+  font-size: 22px;
+  white-space: nowrap;
+}
+
+.header .logo a{
+  color: inherit;
+  text-decoration: none;
+}
+
+.search-bar{
+  flex: 1;
+  max-width: 520px;
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 6px 8px;
+}
+
+.search-bar input{
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.search-bar input::placeholder{
+  color: rgba(255,255,255,0.72);
+}
+
+.search-bar button{
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  transition: transform .15s ease, background .2s ease;
+}
+
+.search-bar button:hover{
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+
+.nav-links{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.nav-links a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+  opacity: .92;
+  font-size: 14px;
+}
+
+.nav-links a:hover{
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* =========================================================
+   LAYOUT (main + sidebar droite)
+   ✅ Desktop : sidebar à droite
+   ✅ Mobile : sidebar en dessous (donc visible)
+========================================================= */
+.layout{
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  display:flex;
+  align-items:flex-start;
+  gap: 18px;
+
+  padding: 18px 16px;
+
+  /* laisse la place au footer si tu veux éviter recouvrement */
+  min-height: calc(100vh - var(--header-h) - var(--footer-h));
+}
+
+.main-content{
+  flex: 1;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+.main-content h2{
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.status{
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Sidebar droite (menu) */
+.sidebar-right{
+  width: 280px;
+  flex: 0 0 280px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+
+  position: sticky;
+  top: calc(var(--header-h) + 14px);
+}
+
+.sidebar-right a{
+  display:block;
+  padding: 12px 12px;
+  border-radius: 12px;
+  text-decoration:none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  transition: background .2s ease, transform .15s ease, border-color .2s ease;
+}
+
+.sidebar-right a:hover{
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.18);
+  transform: translateY(-1px);
+}
+
+.sidebar-right a.active{
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.26);
+}
+
+/* =========================================================
+   GRILLE PHOTOS (le point clé)
+   ✅ Desktop : 3/4 colonnes selon largeur
+   ✅ Tablet : 2 colonnes
+   ✅ Mobile : 2 ou 1 colonne selon taille
+========================================================= */
+.photo-grid{
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
+}
+
+/* Une tuile photo */
+.photo-slot{
+  position: relative;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.10);
+}
+
+/* Image */
+.photo-img{
+  width: 100%;
+  aspect-ratio: 1 / 1; /* carré comme un album */
+  object-fit: cover;
+  cursor: pointer;
+  transition: transform .25s ease;
+}
+
+.photo-slot:hover .photo-img{
+  transform: scale(1.03);
+}
+
+/* Bouton supprimer */
+.delete-photo{
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+
+  border: none;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 12px;
+
+  background: rgba(239,68,68,0.92);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+
+  backdrop-filter: blur(6px);
+  transition: transform .15s ease, background .2s ease;
+}
+
+.delete-photo:hover{
+  background: rgba(220,38,38,0.95);
+  transform: translateY(-1px);
+}
+
+/* Tuile "Ajouter photo" (comme ton croquis) */
+.photo-add{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-style: dashed;
+  border-width: 2px;
+  border-color: rgba(59,130,246,0.35);
+  background: rgba(59,130,246,0.06);
+  min-height: 220px;
+  cursor: pointer;
+  transition: transform .15s ease, background .2s ease, border-color .2s ease;
+}
+
+.photo-add:hover{
+  transform: translateY(-2px);
+  background: rgba(59,130,246,0.10);
+  border-color: rgba(59,130,246,0.55);
+}
+
+.photo-placeholder{
+  text-align:center;
+  font-weight: 800;
+  color: rgba(59,130,246,0.95);
+  font-size: 16px;
+  padding: 18px;
+}
+
+/* =========================================================
+   MODAL PREVIEW
+========================================================= */
+.photo-modal{
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.72);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+}
+
+.photo-modal.open{
+  display: flex;
+}
+
+.photo-modal-close{
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  border: none;
+  cursor: pointer;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.18);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 800;
+  transition: transform .15s ease, background .2s ease;
+}
+
+.photo-modal-close:hover{
+  background: rgba(255,255,255,0.26);
+  transform: translateY(-1px);
+}
+
+.photo-modal-img{
+  max-width: min(980px, 100%);
+  max-height: 82vh;
+  border-radius: 18px;
+  box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+  background: #111;
+}
+
+/* =========================================================
+   FOOTER
+========================================================= */
+.footer{
+  width: 100%;
+  background: var(--dark-2);
+  color: #fff;
+  text-align: center;
+  padding: 14px 12px;
+  font-size: 13px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+/* Tablet */
+@media (max-width: 1024px){
+  .photo-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sidebar-right{
+    width: 260px;
+    flex-basis: 260px;
+  }
+}
+
+/* Mobile : header + menu + sidebar visible */
+@media (max-width: 768px){
+  .header{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav-links{
+    justify-content: center;
+  }
+
+  .search-bar{
+    max-width: 100%;
+  }
+
+  .layout{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sidebar-right{
+    position: relative;           /* plus sticky sur mobile */
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+    order: 2;                     /* sidebar en dessous */
+  }
+
+  .main-content{
+    order: 1;
+    padding: 16px;
+  }
+
+  .photo-grid{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .photo-add{
+    min-height: 180px;
+  }
+}
+
+/* Petit mobile */
+@media (max-width: 420px){
+  .photo-grid{
+    grid-template-columns: 1fr;   /* 1 colonne si écran trop petit */
+  }
+
+  .header .logo{
+    font-size: 20px;
+    text-align: center;
+  }
+}
