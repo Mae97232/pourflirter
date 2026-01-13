@@ -1,3 +1,10 @@
+/* =========================================================
+   ✅ Design/accueil.css – ACCUEIL (accueil.html)
+   FIX iPhone:
+   - Search bar géante (bulle) => hauteur fixe + width 100%
+   - Contenu qui passe derrière au scroll => sticky désactivé mobile + padding-top
+========================================================= */
+
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -18,6 +25,8 @@ img{max-width:100%;height:auto;display:block}
 
   --primary:#3b82f6;
   --primary-2:#2563eb;
+
+  --header-h: 72px; /* desktop approx, mobile recalculé plus bas */
 }
 
 html,body{width:100%;max-width:100%;overflow-x:hidden;height:100%}
@@ -32,18 +41,19 @@ body{
 
 /* ================= HEADER ================= */
 .header{
-  position:sticky;
+  position: sticky; /* ✅ desktop ok */
   top:0;
-  z-index:50;
+  z-index:999;      /* ✅ toujours au-dessus */
   width:100%;
   background:var(--dark);
   color:#fff;
   padding:12px 18px;
+
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap:14px;
-  flex-wrap:wrap; /* ✅ évite la coupe "Déconnexion" */
+  flex-wrap:wrap;
 }
 
 .header .logo{
@@ -52,28 +62,45 @@ body{
   white-space:nowrap;
 }
 
+/* IMPORTANT: ton HTML n'a que <input> dans .search-bar (pas de button) */
 .search-bar{
-  flex:1 1 320px;
+  flex: 1 1 320px;
   max-width:520px;
   min-width:220px;
+
   display:flex;
   align-items:center;
+
   background:rgba(255,255,255,.12);
   border:1px solid rgba(255,255,255,.18);
   border-radius:999px;
   padding:6px 10px;
+
+  /* ✅ empêche iOS de faire n'importe quoi en hauteur */
+  height: 44px;
+  max-height: 44px;
 }
 
 .search-bar input{
   flex:1;
   min-width:0;
+  width:100%;
   border:none;
   outline:none;
   background:transparent;
   color:#fff;
-  padding:8px 8px;
   font-size:14px;
+
+  /* ✅ garde une hauteur stable iPhone */
+  height: 100%;
+  line-height: 1.2;
+  padding: 0 6px;
+
+  /* ✅ évite l'auto-style iOS qui peut casser */
+  -webkit-appearance: none;
+  appearance: none;
 }
+
 .search-bar input::placeholder{color:rgba(255,255,255,.72)}
 
 .nav-links{
@@ -108,13 +135,12 @@ body{
   align-items:flex-start;
   gap:18px;
   padding:18px 16px;
-  flex:1 0 auto; /* ✅ footer en bas */
+
+  flex:1 0 auto;
 }
 
-.main-content{
-  flex:1;
-  min-width:0;
-}
+/* main */
+.main-content{flex:1;min-width:0}
 
 /* ================= SIDEBAR LEFT ================= */
 .sidebar-left{
@@ -137,25 +163,13 @@ body{
 }
 
 .sidebar-left .profile-card img{
-  width:110px;
-  height:110px;
-  border-radius:999px;
-  object-fit:cover;
+  width:110px;height:110px;border-radius:999px;object-fit:cover;
   border:3px solid rgba(59,130,246,.20);
 }
 
-.sidebar-left .username{
-  font-size:16px;
-  font-weight:800;
-  text-align:center;
-}
-
+.sidebar-left .username{font-size:16px;font-weight:800;text-align:center}
 .sidebar-left .info,
-.sidebar-left .localisation{
-  color:var(--muted);
-  font-size:13px;
-  text-align:center;
-}
+.sidebar-left .localisation{color:var(--muted);font-size:13px;text-align:center}
 
 .certif-btn{
   width:100%;
@@ -178,7 +192,6 @@ body{
   grid-template-columns:repeat(3,minmax(0,1fr));
   gap:10px;
 }
-
 .stats>div{
   background:rgba(59,130,246,.08);
   border:1px solid rgba(59,130,246,.16);
@@ -235,12 +248,7 @@ body{
   padding:16px;
   margin-bottom:14px;
 }
-
-.section-title{
-  font-size:18px;
-  font-weight:800;
-  margin-bottom:12px;
-}
+.section-title{font-size:18px;font-weight:800;margin-bottom:12px}
 
 .profiles-row{
   display:grid;
@@ -262,27 +270,15 @@ body{
   border-color:rgba(59,130,246,.22);
   box-shadow:0 14px 28px rgba(0,0,0,.12);
 }
-.mini-card img{
-  width:100%;
-  height:160px;
-  object-fit:cover;
-}
+.mini-card img{width:100%;height:160px;object-fit:cover}
 .mini-info{padding:10px 10px 12px}
 .mini-username{
-  font-weight:800;
-  color:var(--text);
-  font-size:13px;
-  margin-bottom:4px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  font-weight:800;color:var(--text);font-size:13px;margin-bottom:4px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 .mini-details{
-  color:var(--muted);
-  font-size:12px;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  color:var(--muted);font-size:12px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 
 .show-more{
@@ -314,11 +310,7 @@ body{
   align-items:center;
   margin-top:auto;
 }
-.footer a{
-  color:rgba(255,255,255,.9);
-  text-decoration:none;
-  font-weight:600;
-}
+.footer a{color:rgba(255,255,255,.9);text-decoration:none;font-weight:600}
 .footer a:hover{text-decoration:underline}
 
 /* ================= RESPONSIVE ================= */
@@ -331,15 +323,66 @@ body{
   .profiles-row{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 
+/* ✅ MOBILE (iPhone) : le VRAI FIX */
 @media(max-width:768px){
-  .header{flex-direction:column;align-items:stretch;gap:10px}
-  .nav-links{width:100%;justify-content:center}
-  .search-bar{max-width:100%;min-width:0}
 
-  .layout{flex-direction:column;align-items:stretch}
-  .sidebar-left{position:relative;top:auto;width:100%;flex:0 0 auto;order:1}
-  .main-content{order:2}
-  .sidebar-right{position:relative;top:auto;width:100%;flex:0 0 auto;order:3}
+  /* ✅ iOS bug : sticky + wrap => on désactive sticky */
+  .header{
+    position: relative;
+  }
+
+  /* ✅ Empêche le contenu de se coller en haut */
+  .layout{
+    padding-top: 14px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  /* Header en colonne propre */
+  .header{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav-links{
+    width:100%;
+    justify-content:center;
+  }
+
+  /* ✅ LA CORRECTION DE LA "BULLE" */
+  .search-bar{
+    width:100%;
+    max-width: 520px;
+    min-width: 0;
+
+    height: 44px;
+    max-height: 44px;
+
+    border-radius: 14px;       /* ✅ sur mobile, pill plus stable que 999 */
+    padding: 0 12px;
+    margin: 0 auto;
+  }
+
+  .search-bar input{
+    height: 44px;
+    padding: 0;
+    font-size: 16px;           /* ✅ évite le zoom iOS */
+  }
+
+  /* sidebars passent en normal (plus sticky) */
+  .sidebar-left,
+  .sidebar-right{
+    position: relative;
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+  }
+
+  /* ordre mobile */
+  .sidebar-left{ order: 1; }
+  .main-content{ order: 2; }
+  .sidebar-right{ order: 3; }
 
   .profiles-row{grid-template-columns:repeat(2,minmax(0,1fr))}
   .mini-card img{height:150px}
