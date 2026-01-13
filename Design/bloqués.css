@@ -1,9 +1,9 @@
 /* =========================================================
-   ✅ DESIGN/STYLE.CSS – MEMBRES BLOQUÉS (membres_bloques.html)
+   ✅ Design/bloqués.css – MEMBRES BLOQUÉS (membres_bloques.html)
    - même look que tes autres pages (header + layout + sidebar)
    - responsive téléphone/tablette
    - styles pour .blocked-list / .blocked-member / .unblock-btn
-   ✅ FIX: footer toujours en bas de page
+   ✅ Footer toujours en bas
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -30,7 +30,9 @@ img{ max-width:100%; height:auto; display:block; }
   --danger: #ef4444;
 }
 
-/* ✅ FIX FOOTER EN BAS */
+/* =========================================================
+   ✅ FIX GLOBAL : footer en bas (page en colonne)
+========================================================= */
 html, body{
   width:100%;
   max-width:100%;
@@ -42,10 +44,10 @@ body{
   font-family:'Poppins', Arial, sans-serif;
   color: var(--text);
   background: var(--bg);
-  min-height:100vh;
+  min-height: 100vh;
 
-  display: flex;
-  flex-direction: column;
+  display:flex;
+  flex-direction:column;
 }
 
 /* =========================================================
@@ -64,7 +66,7 @@ body{
   align-items:center;
   justify-content:space-between;
   gap: 14px;
-  flex-wrap: wrap; /* ✅ évite que la nav se fasse couper */
+  flex-wrap: wrap; /* ✅ évite la coupe à droite */
 }
 
 .header .logo{
@@ -94,7 +96,7 @@ body{
 
 .search-bar input{
   flex: 1;
-  min-width: 0;
+  min-width: 0; /* ✅ anti overflow */
   border: none;
   outline: none;
   background: transparent;
@@ -153,7 +155,7 @@ body{
 
 /* =========================================================
    LAYOUT + SIDEBAR DROITE
-   ✅ FIX footer: .layout prend l’espace restant
+   ✅ .layout prend la hauteur restante → footer reste en bas
 ========================================================= */
 .layout{
   width: 100%;
@@ -318,7 +320,7 @@ body{
   padding: 14px 12px;
   font-size: 13px;
 
-  margin-top: auto; /* ✅ footer au bas de page */
+  margin-top: auto; /* ✅ footer au bas */
 }
 
 .footer a{
