@@ -9,11 +9,9 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
-/* ===== RESET ===== */
 *{ margin:0; padding:0; box-sizing:border-box; }
 img{ max-width:100%; height:auto; display:block; }
 
-/* ===== THEME ===== */
 :root{
   --bg: #f5f6fb;
   --card: #ffffff;
@@ -39,12 +37,11 @@ img{ max-width:100%; height:auto; display:block; }
   --err-tx: #7f1d1d;
 }
 
-/* ✅ footer en bas */
 html, body{
   width:100%;
   max-width:100%;
   overflow-x:hidden;
-  height:100%;
+  height: 100%;
 }
 
 body{
@@ -57,9 +54,7 @@ body{
   flex-direction:column;
 }
 
-/* =========================================================
-   HEADER (wrap anti-coupe)
-========================================================= */
+/* ================= HEADER ================= */
 .header{
   position: sticky;
   top: 0;
@@ -73,7 +68,7 @@ body{
   align-items:center;
   justify-content:space-between;
   gap: 14px;
-  flex-wrap: wrap; /* ✅ évite que la nav se fasse couper */
+  flex-wrap: wrap;
 }
 
 .header .logo{
@@ -87,7 +82,6 @@ body{
   text-decoration: none;
 }
 
-/* Search (sur cette page il y a seulement input) */
 .search-bar{
   flex: 1 1 320px;
   max-width: 520px;
@@ -117,7 +111,6 @@ body{
   color: rgba(255,255,255,0.72);
 }
 
-/* Nav */
 .nav-links{
   display:flex;
   align-items:center;
@@ -141,14 +134,11 @@ body{
   text-decoration: underline;
 }
 
-/* Sur largeur moyenne, la nav passe en dessous si besoin */
 @media (max-width: 1150px){
   .nav-links{ width: 100%; justify-content: flex-end; }
 }
 
-/* =========================================================
-   LAYOUT + SIDEBAR DROITE (footer en bas)
-========================================================= */
+/* ================= LAYOUT ================= */
 .layout{
   width: 100%;
   max-width: 1200px;
@@ -160,7 +150,7 @@ body{
 
   padding: 18px 16px;
 
-  flex: 1 0 auto; /* ✅ pousse le footer en bas */
+  flex: 1 0 auto;
 }
 
 .main-content{
@@ -168,7 +158,7 @@ body{
   min-width: 0;
 }
 
-/* Sidebar */
+/* ================= SIDEBAR ================= */
 .sidebar-right{
   width: 280px;
   flex: 0 0 280px;
@@ -206,9 +196,7 @@ body{
   border-color: rgba(59,130,246,0.26);
 }
 
-/* =========================================================
-   CARD PARAMÈTRES
-========================================================= */
+/* ================= CARD ================= */
 .card{
   background: var(--card);
   border: 1px solid var(--border);
@@ -228,14 +216,12 @@ body{
   margin-bottom: 16px;
 }
 
-/* Grid champs */
 .grid{
   display:grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
-/* Champ */
 .field{
   display:flex;
   flex-direction: column;
@@ -249,10 +235,8 @@ body{
 .field label{
   font-weight: 700;
   font-size: 13px;
-  color: var(--text);
 }
 
-/* Input / Select */
 .field input,
 .field select{
   width: 100%;
@@ -271,19 +255,15 @@ body{
   box-shadow: 0 0 0 4px rgba(59,130,246,0.18);
 }
 
-/* champs readonly/disabled */
 .field input[readonly],
 .field select:disabled{
   background: rgba(17,24,39,0.04);
   color: rgba(31,41,55,0.78);
 }
 
-/* Bloc suggestion ville */
-.suggest-box{
-  position: relative;
-}
+/* Ville + suggestions */
+.suggest-box{ position: relative; }
 
-/* Ligne (input + bouton) */
 .row{
   display:flex;
   align-items: stretch;
@@ -293,7 +273,6 @@ body{
 .grow{ flex: 1; min-width: 0; }
 .fixed{ flex: 0 0 auto; }
 
-/* Suggestions dropdown */
 .suggestions{
   position: absolute;
   top: calc(100% + 8px);
@@ -308,9 +287,7 @@ body{
   z-index: 20;
 }
 
-.suggestions.open{
-  display:block;
-}
+.suggestions.open{ display:block; }
 
 .suggestions button{
   width:100%;
@@ -328,9 +305,7 @@ body{
   background: rgba(59,130,246,0.08);
 }
 
-/* =========================================================
-   BOUTONS
-========================================================= */
+/* Boutons */
 .actions{
   display:flex;
   gap: 10px;
@@ -346,10 +321,6 @@ body{
   font-weight: 800;
   font-size: 14px;
   transition: transform .15s ease, background .2s ease, border-color .2s ease;
-}
-
-.btn:active{
-  transform: translateY(0);
 }
 
 .btn-primary{
@@ -374,9 +345,7 @@ body{
   transform: translateY(-1px);
 }
 
-/* =========================================================
-   STATUS (ok / err)
-========================================================= */
+/* Status */
 .status{
   margin-top: 12px;
   font-size: 13px;
@@ -385,7 +354,6 @@ body{
 }
 
 .status.ok{
-  margin-top: 12px;
   padding: 10px 12px;
   border-radius: 14px;
   background: var(--ok-bg);
@@ -394,7 +362,6 @@ body{
 }
 
 .status.err{
-  margin-top: 12px;
   padding: 10px 12px;
   border-radius: 14px;
   background: var(--err-bg);
@@ -402,9 +369,7 @@ body{
   color: var(--err-tx);
 }
 
-/* =========================================================
-   FOOTER (collé en bas)
-========================================================= */
+/* ================= FOOTER ================= */
 .footer{
   width: 100%;
   background: var(--dark-2);
@@ -419,7 +384,7 @@ body{
   justify-content: center;
   align-items: center;
 
-  margin-top: auto; /* ✅ footer en bas */
+  margin-top: auto;
 }
 
 .footer a{
@@ -428,13 +393,9 @@ body{
   font-weight: 600;
 }
 
-.footer a:hover{
-  text-decoration: underline;
-}
+.footer a:hover{ text-decoration: underline; }
 
-/* =========================================================
-   RESPONSIVE
-========================================================= */
+/* ================= RESPONSIVE ================= */
 @media (max-width: 1024px){
   .sidebar-right{
     width: 260px;
@@ -475,25 +436,14 @@ body{
     order: 2;
   }
 
-  .main-content{
-    order: 1;
-  }
+  .main-content{ order: 1; }
 
-  .card{
-    padding: 16px;
-  }
+  .card{ padding: 16px; }
 
-  .row{
-    flex-direction: column;
-  }
+  .row{ flex-direction: column; }
 
-  .fixed{
-    width: 100%;
-  }
-
-  .fixed .btn{
-    width: 100%;
-  }
+  .fixed{ width: 100%; }
+  .fixed .btn{ width: 100%; }
 
   .actions .btn{
     width: 100%;
