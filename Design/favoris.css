@@ -6,7 +6,9 @@
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-body{ outline: 8px solid lime !important; }
+
+/* ✅ IMPORTANT : enlève le contour de debug */
+body{ outline: none !important; }
 
 /* BASE */
 :root{
@@ -52,7 +54,7 @@ body{
   background: var(--dark);
   color:#fff;
 
-  /* ✅ un poil plus de padding à droite pour éviter la coupe */
+  /* un poil plus de padding à droite pour éviter la coupe */
   padding: 12px 22px 12px 18px;
 
   display:flex;
@@ -60,7 +62,7 @@ body{
   justify-content:space-between;
   gap: 14px;
 
-  /* ✅ autorise le header à passer sur 2 lignes si besoin */
+  /* ✅ FIX PRINCIPAL : si ça manque de place, ça passe à la ligne */
   flex-wrap: wrap;
 }
 
@@ -76,9 +78,11 @@ body{
 }
 
 .search-bar{
-  flex: 1;
+  /* ✅ FIX : la search peut rétrécir au lieu de pousser la nav dehors */
+  flex: 1 1 320px;
   max-width: 520px;
-  min-width: 220px;          /* ✅ évite qu’elle devienne trop petite */
+  min-width: 220px;
+
   display:flex;
   align-items:center;
   gap: 8px;
@@ -90,7 +94,7 @@ body{
 
 .search-bar input{
   flex: 1;
-  min-width: 0;              /* ✅ IMPORTANT: empêche le débordement */
+  min-width: 0; /* IMPORTANT: empêche le débordement */
   border: none;
   outline: none;
   background: transparent;
@@ -123,13 +127,12 @@ body{
   display:flex;
   align-items:center;
   gap: 14px;
-
-  /* ✅ la nav peut revenir à la ligne au lieu de sortir à droite */
   flex-wrap: wrap;
-
   justify-content: flex-end;
 
-  /* ✅ autorise les calculs de largeur sans overflow */
+  /* ✅ FIX : la nav ne doit jamais sortir à droite */
+  flex: 0 1 auto;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -139,14 +142,21 @@ body{
   font-weight:600;
   opacity: .92;
   font-size: 14px;
-
-  /* ✅ évite que "Déconnexion" se coupe en plein milieu */
   white-space: nowrap;
 }
 
 .nav-links a:hover{
   opacity: 1;
   text-decoration: underline;
+}
+
+/* ✅ FIX SPÉCIAL : sur largeur “moyenne” (comme ta capture),
+   la nav passe en dessous au lieu d’être coupée */
+@media (max-width: 1150px){
+  .nav-links{
+    width: 100%;
+    justify-content: flex-end;
+  }
 }
 
 /* =========================================================
@@ -315,7 +325,7 @@ body{
   }
 }
 
-/* ✅ Sur écran moyen, on réduit un peu la search pour laisser la place à la nav */
+/* Sur écran moyen, on réduit un peu la search pour laisser la place à la nav */
 @media (max-width: 900px){
   .search-bar{
     max-width: 420px;
@@ -331,6 +341,7 @@ body{
 
   .nav-links{
     justify-content: center;
+    width: 100%;
   }
 
   .search-bar{
