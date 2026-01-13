@@ -3,6 +3,7 @@
    - même look que tes autres pages (header + layout + sidebar)
    - responsive téléphone/tablette
    - styles pour .blocked-list / .blocked-member / .unblock-btn
+   ✅ FIX: footer toujours en bas de page
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -29,10 +30,12 @@ img{ max-width:100%; height:auto; display:block; }
   --danger: #ef4444;
 }
 
+/* ✅ FIX FOOTER EN BAS */
 html, body{
   width:100%;
   max-width:100%;
   overflow-x:hidden;
+  height: 100%;
 }
 
 body{
@@ -40,6 +43,9 @@ body{
   color: var(--text);
   background: var(--bg);
   min-height:100vh;
+
+  display: flex;
+  flex-direction: column;
 }
 
 /* =========================================================
@@ -147,6 +153,7 @@ body{
 
 /* =========================================================
    LAYOUT + SIDEBAR DROITE
+   ✅ FIX footer: .layout prend l’espace restant
 ========================================================= */
 .layout{
   width: 100%;
@@ -158,6 +165,8 @@ body{
   gap: 18px;
 
   padding: 18px 16px;
+
+  flex: 1 0 auto; /* ✅ pousse le footer en bas */
 }
 
 .main-content{
@@ -299,7 +308,7 @@ body{
 }
 
 /* =========================================================
-   FOOTER
+   FOOTER (✅ collé en bas)
 ========================================================= */
 .footer{
   width: 100%;
@@ -308,6 +317,8 @@ body{
   text-align: center;
   padding: 14px 12px;
   font-size: 13px;
+
+  margin-top: auto; /* ✅ footer au bas de page */
 }
 
 .footer a{
