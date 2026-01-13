@@ -1,420 +1,507 @@
-/* ======== STYLE FUTURISTE PRO POUR SITE DE RENCONTRE ======== */
+/* =========================================================
+   ✅ Design/accueil.css – ACCUEIL (accueil.html)
+   - header + layout + sidebar gauche/droite
+   - sections (suggestions / en ligne / visiteurs)
+   - cartes mini profils
+   ✅ Footer toujours en bas
+   ✅ Fix overflow header (nav / déconnexion)
+========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
 
+/* ===== RESET ===== */
+*{ margin:0; padding:0; box-sizing:border-box; }
+img{ max-width:100%; height:auto; display:block; }
+
+/* ===== THEME ===== */
 :root{
-  --container-pad: 16px;
-  --gap: 16px;
+  --bg: #f5f6fb;
+  --card: #ffffff;
+  --text: #1f2937;
+  --muted:#6b7280;
+
+  --dark: rgba(17,24,39,0.92);
+  --dark-2: rgba(17,24,39,0.96);
+
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 12px 28px rgba(0,0,0,0.14);
+  --radius: 16px;
+
+  --primary: #3b82f6;
+  --primary-2: #2563eb;
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  font-family: 'Poppins', sans-serif;
-  min-width: 0; /* évite les débordements sur mobile */
+/* ✅ footer en bas */
+html, body{
+  width:100%;
+  max-width:100%;
+  overflow-x:hidden;
+  height:100%;
 }
 
-img{
-  max-width: 100%;
-  height: auto;
-  display: block;
+body{
+  font-family:'Poppins', Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+  min-height:100vh;
+
+  display:flex;
+  flex-direction:column;
 }
 
-body {
-  background: radial-gradient(circle at 20% 20%, #101726, #05070d);
-  color: #e8eef7;
-  min-height: 100vh;
-}
-
-/* ✅ Header futuriste */
-.header {
+/* =========================================================
+   HEADER
+========================================================= */
+.header{
   position: sticky;
   top: 0;
+  z-index: 50;
   width: 100%;
-  padding: 15px 4%;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  backdrop-filter: blur(20px);
-  background: rgba(8, 11, 20, 0.6);
-  border-bottom: 1px solid rgba(0, 221, 255, 0.2);
-  z-index: 1000;
+  background: var(--dark);
+  color:#fff;
+  padding: 12px 18px;
+
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+  flex-wrap: wrap; /* ✅ évite que "Déconnexion" se coupe */
 }
 
-.header .logo {
+.header .logo{
+  font-weight: 700;
   font-size: 22px;
-  font-weight: 600;
-  color: #00eaff;
   white-space: nowrap;
 }
 
 .search-bar{
-  flex: 1;
-  display: flex;
-  justify-content: center;
+  flex: 1 1 320px;
+  max-width: 520px;
+  min-width: 220px;
+
+  display:flex;
+  align-items:center;
+  gap: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 6px 10px;
 }
 
-.search-bar input {
-  padding: 10px 15px;
-  width: 220px;
-  max-width: 100%;
-  border-radius: 50px;
+.search-bar input{
+  flex: 1;
+  min-width: 0;
   border: none;
   outline: none;
-  background: rgba(255,255,255,0.08);
+  background: transparent;
   color: #fff;
-  transition: .3s;
+  padding: 8px 8px;
+  font-size: 14px;
 }
-.search-bar input:focus {
-  background: rgba(255,255,255,0.12);
-  box-shadow: 0 0 10px #00eaff;
+
+.search-bar input::placeholder{
+  color: rgba(255,255,255,0.72);
 }
 
 .nav-links{
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
-.nav-links a {
-  color: #e6ecf6;
-  text-decoration: none;
-  transition: .3s;
+.nav-links a{
+  color:#fff;
+  text-decoration:none;
+  font-weight:600;
+  opacity: .92;
+  font-size: 14px;
   white-space: nowrap;
 }
-.nav-links a:hover {
-  color: #00eaff;
+
+.nav-links a:hover{
+  opacity: 1;
+  text-decoration: underline;
 }
 
-/* ======== NAV + LAYOUT ======== */
-.layout {
-  display: grid;
-  grid-template-columns: 250px 1fr 200px;
-  gap: 25px;
-  padding: 25px 4%;
+@media (max-width: 1150px){
+  .nav-links{ width: 100%; justify-content: flex-end; }
 }
 
-/* ✅ Sidebar gauche : Profil utilisateur */
-.sidebar-left .profile-card {
-  background: rgba(255,255,255,0.04);
-  padding: 20px;
-  border-radius: 16px;
-  text-align: center;
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255,255,255,0.05);
-}
-
-.sidebar-left img {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  object-fit: cover;
+/* =========================================================
+   LAYOUT + SIDEBARS
+========================================================= */
+.layout{
+  width: 100%;
+  max-width: 1200px;
   margin: 0 auto;
+
+  display:flex;
+  align-items:flex-start;
+  gap: 18px;
+
+  padding: 18px 16px;
+
+  flex: 1 0 auto; /* ✅ pousse le footer en bas */
 }
 
-.sidebar-left .username {
-  margin: 10px 0;
-  font-size: 20px;
-  font-weight: 600;
+/* ===== MAIN ===== */
+.main-content{
+  flex: 1;
+  min-width: 0;
 }
 
-.certif-btn {
-  margin-top: 10px;
-  background: #ff007f;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 50px;
-  color: #fff;
-  font-size: 14px;
-  cursor: pointer;
-  transition: .3s;
-}
-.certif-btn:hover {
-  background: #ff3ea2;
-  box-shadow: 0 0 10px #ff007f;
+/* =========================================================
+   SIDEBAR LEFT (profil utilisateur)
+========================================================= */
+.sidebar-left{
+  width: 280px;
+  flex: 0 0 280px;
+
+  position: sticky;
+  top: 88px;
 }
 
-/* ✅ Blocks de statistiques */
-.stats {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 15px;
-  text-align: center;
+.sidebar-left .profile-card{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+
+  display:flex;
+  flex-direction: column;
+  align-items: center;
   gap: 10px;
 }
-.stats div strong {
-  color: #00eaff;
-}
 
-/* ======== Section Profil ======== */
-.section-title {
-  font-size: 22px;
-  margin-bottom: 15px;
-  color: #cdeaff;
-}
-
-/* ✅ Nouvelle grille profils */
-.profiles-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill,minmax(160px,1fr));
-  gap: 20px;
-}
-
-/* ✅ Cartes profils futuristes */
-.profile-card {
-  position: relative;
-  overflow: hidden;
-  background: rgba(40, 50, 70, 0.12);
-  border-radius: 20px;
-  cursor: pointer;
-  padding-bottom: 15px;
-  transition: transform .3s, box-shadow .4s;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-
-.profile-card img {
-  width: 100%;
-  height: 160px;
+.sidebar-left .profile-card img{
+  width: 110px;
+  height: 110px;
+  border-radius: 999px;
   object-fit: cover;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  border: 3px solid rgba(59,130,246,0.20);
 }
 
-.profile-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 0 18px #00eaff55;
-}
-
-/* Texte dans les cartes */
-.profile-info {
-  text-align: center;
-  margin-top: 10px;
-  padding: 0 8px;
-}
-.username {
-  font-weight: 600;
-  color: #ffffff;
-}
-.details {
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-/* ======== Sidebar droite ======== */
-.sidebar-right {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.sidebar-right a {
-  background: rgba(255,255,255,0.05);
-  padding: 10px;
-  border-radius: 10px;
-  color: #e8eef7;
-  text-decoration: none;
-  transition: .3s;
+.sidebar-left .username{
+  font-size: 16px;
+  font-weight: 800;
   text-align: center;
 }
 
-.sidebar-right a:hover {
-  background: rgba(0, 234, 255, 0.23);
-  box-shadow: 0 0 12px #00eaff55;
-  color: #fff;
+.sidebar-left .info{
+  color: var(--muted);
+  font-size: 13px;
+  text-align:center;
 }
 
-/* ======== Footer ======== */
-.footer {
-  margin-top: 50px;
-  padding: 20px;
-  text-align: center;
-  background: #0a0e15;
-  border-top: 1px solid rgba(255,255,255,0.08);
+.sidebar-left .localisation{
+  color: var(--muted);
+  font-size: 13px;
+  text-align:center;
+  margin-top: -4px;
 }
 
-.footer a {
-  color: #99a8ba;
-  margin: 0 10px;
+.certif-btn{
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  padding: 11px 12px;
+  border-radius: 999px;
+  font-weight: 800;
   font-size: 14px;
-  text-decoration: none;
-}
-.footer a:hover {
-  color: #00eaff;
+  color: #fff;
+  background: var(--primary);
+  transition: transform .15s ease, background .2s ease;
 }
 
-/* ================================
-   AJOUT POUR "4 PROFILS + AFFICHER PLUS"
-================================ */
+.certif-btn:hover{
+  background: var(--primary-2);
+  transform: translateY(-1px);
+}
 
-/* 1 ligne de 4 profils (comme ton dessin) */
-.profiles-row{
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 20px;
+.stats{
+  width: 100%;
+  margin-top: 6px;
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stats > div{
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.16);
+  border-radius: 14px;
+  padding: 10px 8px;
+  text-align:center;
+  font-size: 12px;
+  color: var(--muted);
+  transition: transform .15s ease, background .2s ease;
+}
+
+.stats > div strong{
+  color: var(--text);
+  font-size: 15px;
+}
+
+.stats > div:hover{
+  background: rgba(59,130,246,0.12);
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   SIDEBAR RIGHT (menu)
+========================================================= */
+.sidebar-right{
+  width: 280px;
+  flex: 0 0 280px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+
+  position: sticky;
+  top: 88px;
+}
+
+.sidebar-right a{
+  display:block;
+  padding: 12px 12px;
+  border-radius: 12px;
+  text-decoration:none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  transition: background .2s ease, transform .15s ease, border-color .2s ease;
+}
+
+.sidebar-right a:hover{
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.18);
+  transform: translateY(-1px);
+}
+
+.sidebar-right a.active{
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.26);
+}
+
+/* =========================================================
+   SECTIONS PROFILS
+========================================================= */
+.profile-section{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+
+.section-title{
+  font-size: 18px;
+  font-weight: 800;
   margin-bottom: 12px;
 }
 
-/* Cartes mini pour les sections (suggestions/online/visiteurs) */
+/* Row de mini cartes */
+.profiles-row{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* Mini carte */
 .mini-card{
-  position: relative;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.08);
   overflow: hidden;
-  background: rgba(40, 50, 70, 0.12);
-  border-radius: 20px;
   cursor: pointer;
-  padding-bottom: 12px;
-  transition: transform .3s, box-shadow .4s;
-  border: 1px solid rgba(255,255,255,0.06);
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
 
 .mini-card:hover{
-  transform: translateY(-6px);
-  box-shadow: 0 0 18px #00eaff55;
+  transform: translateY(-2px);
+  border-color: rgba(59,130,246,0.22);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.12);
 }
 
 .mini-card img{
   width: 100%;
-  height: 140px;
+  height: 160px;
   object-fit: cover;
-  border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
-/* Texte sous l’image */
 .mini-info{
-  text-align: center;
-  margin-top: 10px;
-  padding: 0 8px;
+  padding: 10px 10px 12px;
 }
 
 .mini-username{
-  font-weight: 600;
-  color: #ffffff;
-  font-size: 14px;
+  font-weight: 800;
+  color: var(--text);
+  font-size: 13px;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .mini-details{
+  color: var(--muted);
   font-size: 12px;
-  opacity: 0.7;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Bouton afficher plus */
 .show-more{
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #e8eef7;
-  padding: 10px 14px;
-  border-radius: 12px;
+  margin-top: 12px;
+  border: none;
   cursor: pointer;
-  transition: .3s;
+  padding: 11px 14px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  color: #fff;
+  background: var(--primary);
+  transition: transform .15s ease, background .2s ease;
 }
 
 .show-more:hover{
-  background: rgba(0, 234, 255, 0.23);
-  box-shadow: 0 0 12px #00eaff55;
-  color: #fff;
+  background: var(--primary-2);
+  transform: translateY(-1px);
 }
 
-/* =========================
-   RESPONSIVE (TABLET + MOBILE)
-   ✅ IMPORTANT : on ne cache plus les sidebars
-========================= */
+/* =========================================================
+   FOOTER
+========================================================= */
+.footer{
+  width: 100%;
+  background: var(--dark-2);
+  color: #fff;
+  text-align: center;
+  padding: 14px 12px;
+  font-size: 13px;
 
-@media (max-width: 1000px) {
-  .layout{
-    grid-template-columns: 1fr;
-    padding: 16px;
-    gap: 16px;
-  }
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
 
-  /* Sidebar gauche devient un bloc en haut */
-  .sidebar-left{
-    display: block;
-    order: 1;
-  }
+  margin-top: auto; /* ✅ footer en bas */
+}
 
-  /* Contenu principal */
-  .main-content{
-    order: 2;
-    width: 100%;
-  }
+.footer a{
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-weight: 600;
+}
 
-  /* Sidebar droite => menu horizontal */
+.footer a:hover{
+  text-decoration: underline;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 1024px){
+  .sidebar-left,
   .sidebar-right{
-    display: flex;
-    order: 3;
-    flex-direction: row;
-    gap: 10px;
-    overflow-x: auto;
-    padding: 10px;
-    border-radius: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.07);
-    backdrop-filter: blur(10px);
-    scrollbar-width: none;
-  }
-  .sidebar-right::-webkit-scrollbar{ display:none; }
-
-  .sidebar-right a{
-    flex: 0 0 auto;
-    white-space: nowrap;
-    padding: 10px 14px;
-    border-radius: 999px;
+    width: 260px;
+    flex-basis: 260px;
   }
 
-  /* Grilles plus adaptées */
-  .profiles-grid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
+  .profiles-row{
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .profile-card img{
-    height: 140px;
-  }
+}
 
-  /* 4 profils -> 2 par ligne */
+@media (max-width: 900px){
   .profiles-row{
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
   }
 }
 
-/* Mobile */
-@media (max-width: 600px){
+@media (max-width: 768px){
   .header{
-    padding: 12px var(--container-pad);
-    flex-wrap: wrap;
-  }
-
-  .header .logo{
-    width: 100%;
-  }
-
-  .search-bar{
-    width: 100%;
-    justify-content: flex-start;
-  }
-  .search-bar input{
-    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
   .nav-links{
     width: 100%;
-    justify-content: space-between;
-    gap: 10px;
+    justify-content: center;
   }
 
-  /* 1 colonne si écran très petit */
-  .profiles-grid{
-    grid-template-columns: 1fr;
+  .search-bar{
+    max-width: 100%;
+    min-width: 0;
   }
+
+  .layout{
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .sidebar-left{
+    position: relative;
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+    order: 1;
+  }
+
+  .main-content{
+    order: 2;
+  }
+
+  .sidebar-right{
+    position: relative;
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+    order: 3;
+  }
+
+  .profiles-row{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mini-card img{
+    height: 150px;
+  }
+
+  .show-more{
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px){
+  .header .logo{
+    font-size: 20px;
+    text-align: center;
+  }
+
   .profiles-row{
     grid-template-columns: 1fr;
   }
 
-  .profile-card img{
-    height: 170px;
+  .mini-card img{
+    height: 180px;
   }
 
-  button, .btn, a{
-    -webkit-tap-highlight-color: transparent;
+  .stats{
+    grid-template-columns: 1fr;
   }
 }
