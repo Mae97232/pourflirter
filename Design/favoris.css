@@ -2,7 +2,7 @@
    ✅ STYLE - MES FAVORIS (mes-favoris.html)
    - même look que mes-photos / profil
    - responsive mobile/tablette
-   ✅ FIX: "Déconnexion" trop caché → nav plus lisible + wrap clean
+   ✅ FIX: Déconnexion coupé à droite (overflow)
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -50,12 +50,17 @@ body{
   width: 100%;
   background: var(--dark);
   color:#fff;
-  padding: 12px 18px;
+
+  /* ✅ un poil plus de padding à droite pour éviter la coupe */
+  padding: 12px 22px 12px 18px;
 
   display:flex;
   align-items:center;
   justify-content:space-between;
   gap: 14px;
+
+  /* ✅ autorise le header à passer sur 2 lignes si besoin */
+  flex-wrap: wrap;
 }
 
 .header .logo{
@@ -71,8 +76,8 @@ body{
 
 .search-bar{
   flex: 1;
-  min-width: 220px;              /* ✅ évite que la nav “mange” tout */
   max-width: 520px;
+  min-width: 220px;          /* ✅ évite qu’elle devienne trop petite */
   display:flex;
   align-items:center;
   gap: 8px;
@@ -84,13 +89,13 @@ body{
 
 .search-bar input{
   flex: 1;
+  min-width: 0;              /* ✅ IMPORTANT: empêche le débordement */
   border: none;
   outline: none;
   background: transparent;
   color: #fff;
   padding: 8px 10px;
   font-size: 14px;
-  min-width: 0;
 }
 
 .search-bar input::placeholder{
@@ -113,48 +118,34 @@ body{
   transform: translateY(-1px);
 }
 
-/* ✅ FIX NAV : on évite “Déconnexion” caché, et on rend la nav lisible */
 .nav-links{
   display:flex;
   align-items:center;
-  gap: 10px;
-  flex-wrap: wrap;               /* ✅ autorise le retour à la ligne */
+  gap: 14px;
+
+  /* ✅ la nav peut revenir à la ligne au lieu de sortir à droite */
+  flex-wrap: wrap;
+
   justify-content: flex-end;
-  flex-shrink: 0;                /* ✅ la nav ne se compresse pas */
-  max-width: 460px;              /* ✅ limite la place prise */
+
+  /* ✅ autorise les calculs de largeur sans overflow */
+  min-width: 0;
 }
 
-/* Les liens nav deviennent des “pills” plus visibles */
 .nav-links a{
   color:#fff;
   text-decoration:none;
-  font-weight:700;
-  font-size: 13px;
+  font-weight:600;
+  opacity: .92;
+  font-size: 14px;
 
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(255,255,255,0.10);
-  border: 1px solid rgba(255,255,255,0.14);
-
-  white-space: nowrap;           /* ✅ “Déconnexion” reste entier */
-  transition: transform .15s ease, background .2s ease, border-color .2s ease;
+  /* ✅ évite que "Déconnexion" se coupe en plein milieu */
+  white-space: nowrap;
 }
 
 .nav-links a:hover{
-  background: rgba(255,255,255,0.18);
-  border-color: rgba(255,255,255,0.22);
-  transform: translateY(-1px);
-  text-decoration: none;
-}
-
-/* ✅ “Déconnexion” encore plus visible */
-.nav-links a#logout{
-  background: rgba(239,68,68,0.22);
-  border-color: rgba(239,68,68,0.35);
-}
-.nav-links a#logout:hover{
-  background: rgba(239,68,68,0.32);
-  border-color: rgba(239,68,68,0.45);
+  opacity: 1;
+  text-decoration: underline;
 }
 
 /* =========================================================
@@ -209,7 +200,7 @@ body{
   border-radius: 12px;
   text-decoration:none;
   color: var(--text);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   border: 1px solid transparent;
   transition: background .2s ease, transform .15s ease, border-color .2s ease;
@@ -232,44 +223,36 @@ body{
 .profile-cards{
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  gap: 14px;
+  margin-top: 10px;
 }
 
 .profile-card{
   display:flex;
   align-items:center;
-  gap: 14px;
+  gap: 12px;
 
   background: #fff;
   border: 1px solid var(--border);
-  border-radius: 18px;
-  box-shadow: 0 12px 26px rgba(0,0,0,0.12);
-  padding: 14px 16px;
+  border-radius: 16px;
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+  padding: 12px;
 
   transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
 
 .profile-card:hover{
-  transform: translateY(-3px);
+  transform: translateY(-2px);
   border-color: rgba(59,130,246,0.25);
-  box-shadow: 0 18px 34px rgba(0,0,0,0.18);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
 }
 
 .profile-card img{
-  width: 70px;
-  height: 70px;
+  width: 64px;
+  height: 64px;
   border-radius: 999px;
   object-fit: cover;
-  border: 3px solid rgba(59,130,246,0.25);
-  flex-shrink: 0;
-}
-
-.profile-info{
-  display:flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  border: 2px solid rgba(59,130,246,0.25);
 }
 
 .profile-info p{
@@ -277,21 +260,18 @@ body{
   line-height: 1.25;
   font-size: 14px;
   color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .profile-info p strong{
   color: var(--text);
-  font-size: 16px;
+  font-size: 15px;
 }
 
 /* Message “chargement / vide / erreur” */
 .profile-cards > p{
   grid-column: 1 / -1;
   color: var(--muted);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* =========================================================
@@ -314,7 +294,7 @@ body{
 .footer a{
   color: rgba(255,255,255,0.9);
   text-decoration: none;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .footer a:hover{
@@ -332,9 +312,11 @@ body{
     width: 260px;
     flex-basis: 260px;
   }
+}
 
-  /* ✅ un peu plus compact */
-  .nav-links{
+/* ✅ Sur écran moyen, on réduit un peu la search pour laisser la place à la nav */
+@media (max-width: 900px){
+  .search-bar{
     max-width: 420px;
   }
 }
@@ -348,7 +330,6 @@ body{
 
   .nav-links{
     justify-content: center;
-    max-width: 100%;
   }
 
   .search-bar{
@@ -384,16 +365,8 @@ body{
   .profile-cards{
     grid-template-columns: 1fr;
   }
-
   .header .logo{
     font-size: 20px;
     text-align: center;
   }
-
-  /* ✅ sur très petit écran, liens nav un peu plus petits */
-  .nav-links a{
-    font-size: 12px;
-    padding: 7px 10px;
-  }
 }
-body { outline: 10px solid red !important; }
