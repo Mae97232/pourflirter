@@ -449,3 +449,42 @@ body{
     padding-top: 12px;
   }
 }
+/* =========================================================
+   FIX iOS – Recherche compacte (PAS GROS, PAS DEVANT)
+========================================================= */
+@media (max-width: 768px){
+
+  /* iOS zoom fix */
+  input, textarea, select{
+    font-size: 16px; /* empêche le zoom Safari */
+  }
+
+  .header{
+    position: relative;
+    top: auto;
+    z-index: 1;
+  }
+
+  .search-bar{
+    width: 100%;
+    max-width: 100%;
+    height: 38px;                 /* 🔑 petit */
+    border-radius: 999px;         /* 🔑 pilule */
+    padding: 2px 6px;
+    margin: 0;
+  }
+
+  .search-bar input{
+    height: 100%;
+    font-size: 14px;              /* visuel petit */
+    padding: 0 10px;
+  }
+
+  .search-bar button{
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+    border-radius: 999px;
+    padding: 0;
+  }
+}
