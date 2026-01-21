@@ -406,37 +406,46 @@ body{
   }
 }
 /* =========================================================
-   FIX MOBILE – Search + header (iOS / Android)
+   FIX MOBILE – Search BAR style PRO (pilule propre)
 ========================================================= */
 @media (max-width: 768px){
 
-  /* ❌ enlever le sticky sur mobile */
+  /* Header normal (pas au-dessus du contenu) */
   .header{
     position: relative;
     top: auto;
-    z-index: auto;
+    z-index: 1;
   }
 
-  /* 🔍 search normale (plus de gros rond) */
+  /* Search BAR = pilule comme desktop mais maîtrisée */
   .search-bar{
     width: 100%;
     max-width: 100%;
-    border-radius: 14px;   /* au lieu de 999px */
-    padding: 6px 10px;
+    height: 44px;                 /* 🔑 hauteur fixe */
+    border-radius: 999px;         /* 🔑 vraie pilule */
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
   }
 
   .search-bar input{
+    height: 100%;
+    padding: 0 12px;
     font-size: 14px;
-    padding: 10px;
   }
 
   .search-bar button{
-    border-radius: 10px;
-    padding: 8px 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 999px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* évite que le header recouvre le contenu */
+  /* Évite que le contenu passe sous le header */
   .layout{
-    padding-top: 14px;
+    padding-top: 12px;
   }
 }
