@@ -1,5 +1,9 @@
 /* =========================================================
-   ✅ Design/bloqués.css – MEMBRES BLOQUÉS
+   ✅ Design/bloqués.css – MEMBRES BLOQUÉS (membres_bloques.html)
+   - même look que tes autres pages (header + layout + sidebar)
+   - responsive téléphone/tablette
+   - styles pour .blocked-list / .blocked-member / .unblock-btn
+   ✅ Footer toujours en bas
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -10,227 +14,464 @@ img{ max-width:100%; height:auto; display:block; }
 
 /* ===== THEME ===== */
 :root{
-  --bg:#f5f6fb;
-  --card:#ffffff;
-  --text:#1f2937;
+  --bg: #f5f6fb;
+  --card: #ffffff;
+  --text: #1f2937;
   --muted:#6b7280;
-  --dark:rgba(17,24,39,0.92);
-  --dark-2:rgba(17,24,39,0.96);
-  --border:rgba(0,0,0,0.08);
-  --shadow:0 12px 28px rgba(0,0,0,0.14);
-  --radius:16px;
-  --primary:#3b82f6;
-  --danger:#ef4444;
+
+  --dark: rgba(17,24,39,0.92);
+  --dark-2: rgba(17,24,39,0.96);
+
+  --border: rgba(0,0,0,0.08);
+  --shadow: 0 12px 28px rgba(0,0,0,0.14);
+  --radius: 16px;
+
+  --primary: #3b82f6;
+  --danger: #ef4444;
 }
 
 /* =========================================================
-   GLOBAL
+   ✅ FIX GLOBAL : footer en bas (page en colonne)
 ========================================================= */
 html, body{
   width:100%;
+  max-width:100%;
   overflow-x:hidden;
+  height: 100%;
 }
 
 body{
   font-family:'Poppins', Arial, sans-serif;
-  background:var(--bg);
-  color:var(--text);
-  min-height:100vh;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+
   display:flex;
   flex-direction:column;
 }
 
 /* =========================================================
-   HEADER
+   HEADER (fix overflow "Déconnexion" : wrap)
 ========================================================= */
 .header{
-  position:sticky;
-  top:0;
-  z-index:50;
-  width:100%;
-  background:var(--dark);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: var(--dark);
   color:#fff;
-  padding:12px 18px;
+  padding: 12px 18px;
 
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:14px;
-  flex-wrap:wrap;
+  gap: 14px;
+  flex-wrap: wrap; /* ✅ évite la coupe à droite */
 }
 
-.logo{
-  font-size:22px;
-  font-weight:700;
+.header .logo{
+  font-weight: 700;
+  font-size: 22px;
+  white-space: nowrap;
 }
 
-/* ===== SEARCH BAR DESKTOP ===== */
+.header .logo a{
+  color: inherit;
+  text-decoration: none;
+}
+
 .search-bar{
-  flex:1 1 320px;
-  max-width:520px;
-  min-width:220px;
+  flex: 1 1 320px;
+  max-width: 520px;
+  min-width: 220px;
 
   display:flex;
   align-items:center;
-  gap:8px;
-
-  background:rgba(255,255,255,0.12);
-  border:1px solid rgba(255,255,255,0.18);
-  border-radius:999px;
-  padding:6px 10px;
+  gap: 8px;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 999px;
+  padding: 6px 8px;
 }
 
 .search-bar input{
-  flex:1;
-  border:none;
-  background:transparent;
-  color:#fff;
-  padding:8px 10px;
+  flex: 1;
+  min-width: 0; /* ✅ anti overflow */
+  border: none;
+  outline: none;
+  background: transparent;
+  color: #fff;
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.search-bar input::placeholder{
+  color: rgba(255,255,255,0.72);
 }
 
 .search-bar button{
-  border:none;
-  background:rgba(255,255,255,0.16);
-  color:#fff;
-  padding:8px 12px;
-  border-radius:999px;
+  border: none;
+  cursor: pointer;
+  background: rgba(255,255,255,0.16);
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 999px;
+  transition: transform .15s ease, background .2s ease;
+  flex-shrink: 0;
 }
 
-/* ===== NAV ===== */
+.search-bar button:hover{
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+
 .nav-links{
   display:flex;
-  gap:14px;
+  align-items:center;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 .nav-links a{
   color:#fff;
-  font-weight:600;
   text-decoration:none;
+  font-weight:600;
+  opacity: .92;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.nav-links a:hover{
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Sur largeur moyenne, la nav passe en dessous si besoin */
+@media (max-width: 1150px){
+  .nav-links{ width: 100%; justify-content: flex-end; }
 }
 
 /* =========================================================
-   LAYOUT
+   LAYOUT + SIDEBAR DROITE
+   ✅ .layout prend la hauteur restante → footer reste en bas
 ========================================================= */
 .layout{
-  max-width:1200px;
-  margin:0 auto;
-  padding:18px 16px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+
   display:flex;
-  gap:18px;
-  flex:1;
+  align-items:flex-start;
+  gap: 18px;
+
+  padding: 18px 16px;
+
+  flex: 1 0 auto; /* ✅ pousse le footer en bas */
 }
 
 .main-content{
-  flex:1;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  padding:18px;
+  flex: 1;
+  min-width: 0;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
 }
 
-/* ===== SIDEBAR ===== */
+.page-title{
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+/* Sidebar */
 .sidebar-right{
-  width:280px;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:var(--radius);
-  box-shadow:var(--shadow);
-  padding:12px;
-  position:sticky;
-  top:90px;
+  width: 280px;
+  flex: 0 0 280px;
+
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px;
+
+  position: sticky;
+  top: 88px;
+}
+
+.sidebar-right a{
+  display:block;
+  padding: 12px 12px;
+  border-radius: 12px;
+  text-decoration:none;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 14px;
+  border: 1px solid transparent;
+  transition: background .2s ease, transform .15s ease, border-color .2s ease;
+}
+
+.sidebar-right a:hover{
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.18);
+  transform: translateY(-1px);
+}
+
+.sidebar-right a.active{
+  background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.26);
 }
 
 /* =========================================================
-   MEMBRES BLOQUÉS
+   LISTE BLOQUÉS
 ========================================================= */
 .blocked-list{
-  display:grid;
-  grid-template-columns:repeat(2,1fr);
-  gap:14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 12px;
 }
 
+/* Carte membre bloqué */
 .blocked-member{
   display:flex;
-  gap:14px;
-  padding:14px;
-  border-radius:16px;
-  border:1px solid var(--border);
-  background:#fff;
+  align-items:center;
+  gap: 14px;
+
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 14px;
+
+  box-shadow: 0 10px 22px rgba(0,0,0,0.10);
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
+}
+
+.blocked-member:hover{
+  transform: translateY(-2px);
+  border-color: rgba(59,130,246,0.22);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
 }
 
 .avatar{
-  width:64px;
-  height:64px;
-  border-radius:50%;
+  width: 64px;
+  height: 64px;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 2px solid rgba(59,130,246,0.25);
+  flex-shrink: 0;
 }
 
 .member-info{
-  flex:1;
   display:flex;
-  justify-content:space-between;
   align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
 }
 
+.username{
+  font-weight: 700;
+  color: var(--text);
+  font-size: 15px;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Bouton débloquer */
 .unblock-btn{
-  background:var(--danger);
-  color:#fff;
-  border:none;
-  padding:10px 14px;
-  border-radius:999px;
+  border: none;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fff;
+  background: rgba(239,68,68,0.92);
+  transition: transform .15s ease, background .2s ease;
+  flex-shrink: 0;
+}
+
+.unblock-btn:hover{
+  background: rgba(220,38,38,0.95);
+  transform: translateY(-1px);
+}
+
+/* Message vide/erreur dans la liste */
+.blocked-list > p{
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-weight: 600;
 }
 
 /* =========================================================
-   FOOTER
+   FOOTER (✅ collé en bas)
 ========================================================= */
 .footer{
-  margin-top:auto;
-  background:var(--dark-2);
-  color:#fff;
-  text-align:center;
-  padding:14px;
+  width: 100%;
+  background: var(--dark-2);
+  color: #fff;
+  text-align: center;
+  padding: 14px 12px;
+  font-size: 13px;
+
+  margin-top: auto; /* ✅ footer au bas */
+}
+
+.footer a{
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer a:hover{
+  text-decoration: underline;
 }
 
 /* =========================================================
-   MOBILE – FIX DÉFINITIF
+   RESPONSIVE
 ========================================================= */
-@media (max-width:768px){
+@media (max-width: 1024px){
+  .profile-cards{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .sidebar-right{
+    width: 260px;
+    flex-basis: 260px;
+  }
+}
 
-  /* 🔥 LE POINT CLÉ : on enlève sticky */
+/* Sur écran moyen, on réduit un peu la search pour laisser la place à la nav */
+@media (max-width: 900px){
+  .search-bar{ max-width: 420px; }
+}
+
+@media (max-width: 768px){
   .header{
-    position:relative;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav-links{
+    justify-content: center;
+    width: 100%;
   }
 
   .search-bar{
-    width:100%;
-    min-height:40px;
-    border-radius:20px;     /* même rendu que Favoris */
-    padding:4px 10px;
-  }
-
-  .search-bar input{
-    font-size:16px;
-    padding:6px 8px;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .layout{
-    flex-direction:column;
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .sidebar-right{
-    width:100%;
-    position:relative;
+    position: relative;
+    top: auto;
+    width: 100%;
+    flex: 0 0 auto;
+    order: 2;
   }
 
-  .blocked-list{
-    grid-template-columns:1fr;
+  .main-content{
+    order: 1;
+    padding: 16px;
   }
 
-  .blocked-member{
-    flex-direction:column;
+  .profile-cards{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+}
+
+@media (max-width: 420px){
+  .profile-cards{
+    grid-template-columns: 1fr;
+  }
+  .header .logo{
+    font-size: 20px;
+    text-align: center;
+  }
+}
+/* =========================
+   FIX iPhone - search géante
+   (favoris + parametre)
+========================= */
+
+/* 1) Empêche Safari de faire gonfler les flex items */
+.header{
+  flex-wrap: wrap;
+}
+
+.search-bar{
+  flex: 1 1 320px;
+  width: 100%;
+  max-width: 520px;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  /* ✅ hauteur FIXE => plus de cercle */
+  height: 44px;
+  max-height: 44px;
+
+  padding: 0 10px;
+  border-radius: 14px; /* ✅ plus stable que 999px sur iOS */
+}
+
+/* si tu as un bouton loupe */
+.search-bar button{
+  height: 32px;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* l’input */
+.search-bar input{
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+
+  height: 44px;
+  line-height: 44px;
+
+  padding: 0 8px;
+  border: none;
+  outline: none;
+
+  /* ✅ évite les styles iOS */
+  -webkit-appearance: none;
+  appearance: none;
+
+  /* ✅ évite le zoom iOS */
+  font-size: 16px;
+}
+
+/* Mobile : tout bien aligné */
+@media (max-width: 768px){
+  .header{
+    position: relative; /* évite bug sticky iOS */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
   }
 
-  .unblock-btn{
-    width:100%;
+  .nav-links{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-bar{
+    max-width: 100%;
+    margin: 0 auto;
   }
 }
