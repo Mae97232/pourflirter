@@ -1,5 +1,5 @@
 /* =========================================================
-   ✅ Design/bloqués.css – MEMBRES BLOQUÉS (membres_bloques.html)
+   ✅ Design/bloqués.css – MEMBRES BLOQUÉS
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -10,17 +10,17 @@ img{ max-width:100%; height:auto; display:block; }
 
 /* ===== THEME ===== */
 :root{
-  --bg: #f5f6fb;
-  --card: #ffffff;
-  --text: #1f2937;
+  --bg:#f5f6fb;
+  --card:#ffffff;
+  --text:#1f2937;
   --muted:#6b7280;
-  --dark: rgba(17,24,39,0.92);
-  --dark-2: rgba(17,24,39,0.96);
-  --border: rgba(0,0,0,0.08);
-  --shadow: 0 12px 28px rgba(0,0,0,0.14);
-  --radius: 16px;
-  --primary: #3b82f6;
-  --danger: #ef4444;
+  --dark:rgba(17,24,39,0.92);
+  --dark-2:rgba(17,24,39,0.96);
+  --border:rgba(0,0,0,0.08);
+  --shadow:0 12px 28px rgba(0,0,0,0.14);
+  --radius:16px;
+  --primary:#3b82f6;
+  --danger:#ef4444;
 }
 
 /* =========================================================
@@ -28,15 +28,13 @@ img{ max-width:100%; height:auto; display:block; }
 ========================================================= */
 html, body{
   width:100%;
-  max-width:100%;
   overflow-x:hidden;
-  height:100%;
 }
 
 body{
   font-family:'Poppins', Arial, sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  background:var(--bg);
+  color:var(--text);
   min-height:100vh;
   display:flex;
   flex-direction:column;
@@ -46,100 +44,80 @@ body{
    HEADER
 ========================================================= */
 .header{
-  position: sticky;
-  top: 0;
-  z-index: 50;
-  width: 100%;
-  background: var(--dark);
+  position:sticky;
+  top:0;
+  z-index:50;
+  width:100%;
+  background:var(--dark);
   color:#fff;
-  padding: 12px 18px;
+  padding:12px 18px;
 
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap: 14px;
-  flex-wrap: wrap;
+  gap:14px;
+  flex-wrap:wrap;
 }
 
-.header .logo{
-  font-weight:700;
+.logo{
   font-size:22px;
-  white-space:nowrap;
+  font-weight:700;
 }
 
-.header .logo a{
-  color:inherit;
-  text-decoration:none;
-}
-
-/* ===== SEARCH BAR (DESKTOP) ===== */
+/* ===== SEARCH BAR DESKTOP ===== */
 .search-bar{
-  flex: 1 1 320px;
-  max-width: 520px;
-  min-width: 220px;
+  flex:1 1 320px;
+  max-width:520px;
+  min-width:220px;
 
   display:flex;
   align-items:center;
   gap:8px;
 
-  background: rgba(255,255,255,0.12);
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 999px;
-  padding: 6px 10px;
+  background:rgba(255,255,255,0.12);
+  border:1px solid rgba(255,255,255,0.18);
+  border-radius:999px;
+  padding:6px 10px;
 }
 
 .search-bar input{
   flex:1;
-  min-width:0;
   border:none;
-  outline:none;
   background:transparent;
   color:#fff;
   padding:8px 10px;
-  font-size:14px;
-}
-
-.search-bar input::placeholder{
-  color: rgba(255,255,255,0.72);
 }
 
 .search-bar button{
   border:none;
-  cursor:pointer;
-  background: rgba(255,255,255,0.16);
+  background:rgba(255,255,255,0.16);
   color:#fff;
   padding:8px 12px;
   border-radius:999px;
-  flex-shrink:0;
 }
 
 /* ===== NAV ===== */
 .nav-links{
   display:flex;
-  align-items:center;
   gap:14px;
-  flex-wrap:wrap;
 }
 
 .nav-links a{
   color:#fff;
   font-weight:600;
   text-decoration:none;
-  font-size:14px;
-  white-space:nowrap;
 }
 
 /* =========================================================
    LAYOUT
 ========================================================= */
 .layout{
-  width:100%;
   max-width:1200px;
   margin:0 auto;
+  padding:18px 16px;
   display:flex;
   gap:18px;
-  padding:18px 16px;
-  flex:1 0 auto;
+  flex:1;
 }
 
 .main-content{
@@ -151,11 +129,6 @@ body{
   padding:18px;
 }
 
-.page-title{
-  font-size:20px;
-  margin-bottom:12px;
-}
-
 /* ===== SIDEBAR ===== */
 .sidebar-right{
   width:280px;
@@ -165,16 +138,7 @@ body{
   box-shadow:var(--shadow);
   padding:12px;
   position:sticky;
-  top:88px;
-}
-
-.sidebar-right a{
-  display:block;
-  padding:12px;
-  border-radius:12px;
-  font-weight:600;
-  color:var(--text);
-  text-decoration:none;
+  top:90px;
 }
 
 /* =========================================================
@@ -182,50 +146,38 @@ body{
 ========================================================= */
 .blocked-list{
   display:grid;
-  grid-template-columns: repeat(2, minmax(0,1fr));
+  grid-template-columns:repeat(2,1fr);
   gap:14px;
 }
 
 .blocked-member{
   display:flex;
-  align-items:center;
   gap:14px;
   padding:14px;
-  background:#fff;
-  border:1px solid var(--border);
   border-radius:16px;
-  box-shadow:0 10px 22px rgba(0,0,0,0.1);
+  border:1px solid var(--border);
+  background:#fff;
 }
 
 .avatar{
   width:64px;
   height:64px;
-  border-radius:999px;
-  object-fit:cover;
+  border-radius:50%;
 }
 
 .member-info{
+  flex:1;
   display:flex;
   justify-content:space-between;
   align-items:center;
-  gap:12px;
-  width:100%;
-}
-
-.username{
-  font-weight:700;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
 }
 
 .unblock-btn{
-  border:none;
   background:var(--danger);
   color:#fff;
-  padding:10px 12px;
+  border:none;
+  padding:10px 14px;
   border-radius:999px;
-  font-weight:800;
 }
 
 /* =========================================================
@@ -240,51 +192,25 @@ body{
 }
 
 /* =========================================================
-   TABLETTE
-========================================================= */
-@media (max-width:1024px){
-  .blocked-list{ grid-template-columns:1fr; }
-  .sidebar-right{ width:260px; }
-}
-
-/* =========================================================
-   MOBILE – BARRE DE RECHERCHE ARRONDIE (FIX DÉFINITIF)
+   MOBILE – FIX DÉFINITIF
 ========================================================= */
 @media (max-width:768px){
 
+  /* 🔥 LE POINT CLÉ : on enlève sticky */
   .header{
-    flex-direction:column;
-    align-items:stretch;
-    gap:10px;
+    position:relative;
   }
 
-  /* ✅ SEARCH BAR MOBILE – PLUS JAMAIS CARRÉ */
   .search-bar{
     width:100%;
-    max-width:100%;
     min-height:40px;
+    border-radius:20px;     /* même rendu que Favoris */
     padding:4px 10px;
-    border-radius:999px;
-    display:flex;
-    align-items:center;
   }
 
   .search-bar input{
-    flex:1;
-    height:auto;
-    font-size:16px; /* anti-zoom iOS */
+    font-size:16px;
     padding:6px 8px;
-  }
-
-  .search-bar button{
-    width:34px;
-    height:34px;
-    border-radius:999px;
-    padding:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-shrink:0;
   }
 
   .layout{
@@ -294,11 +220,6 @@ body{
   .sidebar-right{
     width:100%;
     position:relative;
-    order:2;
-  }
-
-  .main-content{
-    order:1;
   }
 
   .blocked-list{
@@ -307,16 +228,9 @@ body{
 
   .blocked-member{
     flex-direction:column;
-    align-items:flex-start;
-  }
-
-  .member-info{
-    flex-direction:column;
-    align-items:flex-start;
   }
 
   .unblock-btn{
     width:100%;
-    text-align:center;
   }
 }
