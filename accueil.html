@@ -223,10 +223,9 @@ window.openProfile = async function(id){
 
 /* ---------------- (Option) ouvre une page liste ---------------- */
 window.openList = function(type){
-  // tu peux créer plus tard une page : list.html?type=adeptes / adhesion / contacts
-  // pour l'instant, simple redirection (tu peux changer)
-  window.location.href = "list.html?type=" + encodeURIComponent(type);
+  window.location.href = "relations.html?type=" + encodeURIComponent(type);
 };
+
 
 /* ---------------- ONLINE STATUS ---------------- */
 async function updateOnlineStatus() {
