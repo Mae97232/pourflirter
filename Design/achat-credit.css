@@ -401,3 +401,49 @@ body{
     text-align: center;
   }
 }
+/* =========================================================
+   🔥 FIX MOBILE TOTAL – ACHAT CRÉDITS
+========================================================= */
+@media (max-width: 768px){
+
+  /* ❌ Plus de sticky sur mobile */
+  .header{
+    position: relative;
+  }
+
+  .sidebar-right{
+    position: relative;
+    top: auto;
+  }
+
+  /* 📱 Layout 100% vertical */
+  .layout{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .main-content,
+  .sidebar-right{
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* 🧼 Cartes bien larges */
+  .credit-packages{
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .credit-card{
+    width: 100%;
+  }
+
+  /* Barre de recherche bien fluide */
+  .search-bar{
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
