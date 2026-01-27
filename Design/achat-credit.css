@@ -1,5 +1,10 @@
 /* =========================================================
    ✅ Design/achat-credit.css – ACHAT DE CRÉDITS
+   - même look que tes autres pages (header + layout + sidebar)
+   - responsive téléphone/tablette
+   - cartes crédits propres
+   ✅ Footer toujours en bas
+   ✅ Fix overflow header (nav / déconnexion)
 ========================================================= */
 
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
@@ -31,7 +36,7 @@ html, body{
   width:100%;
   max-width:100%;
   overflow-x:hidden;
-  min-height: 100%;
+  height: 100%;
 }
 
 body{
@@ -39,14 +44,18 @@ body{
   color: var(--text);
   background: var(--bg);
   min-height:100vh;
+
   display:flex;
   flex-direction:column;
 }
 
 /* =========================================================
-   HEADER
+   HEADER (wrap anti-coupe)
 ========================================================= */
 .header{
+  position: sticky;
+  top: 0;
+  z-index: 50;
   width: 100%;
   background: var(--dark);
   color:#fff;
@@ -56,9 +65,7 @@ body{
   align-items:center;
   justify-content:space-between;
   gap: 14px;
-  flex-wrap: wrap;
-  position: relative; /* 🔥 plus de sticky */
-  z-index: 10;
+  flex-wrap: wrap; /* ✅ évite que la nav se fasse couper */
 }
 
 .header .logo{
@@ -72,7 +79,6 @@ body{
   text-decoration: none;
 }
 
-/* ===== SEARCH BAR FIX ===== */
 .search-bar{
   flex: 1 1 320px;
   max-width: 520px;
@@ -83,7 +89,7 @@ body{
   gap: 8px;
   background: rgba(255,255,255,0.12);
   border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 30px;
+  border-radius: 999px;
   padding: 6px 8px;
 }
 
@@ -105,20 +111,26 @@ body{
 .search-bar button{
   border: none;
   cursor: pointer;
-  background: rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.16);
   color: #fff;
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
+  padding: 8px 12px;
+  border-radius: 999px;
+  transition: transform .15s ease, background .2s ease;
   flex-shrink: 0;
 }
 
-/* NAV */
+.search-bar button:hover{
+  background: rgba(255,255,255,0.22);
+  transform: translateY(-1px);
+}
+
 .nav-links{
   display:flex;
   align-items:center;
   gap: 14px;
   flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 100%;
 }
 
 .nav-links a{
@@ -130,18 +142,31 @@ body{
   white-space: nowrap;
 }
 
+.nav-links a:hover{
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Sur largeur moyenne, la nav passe en dessous si besoin */
+@media (max-width: 1150px){
+  .nav-links{ width: 100%; justify-content: flex-end; }
+}
+
 /* =========================================================
-   LAYOUT
+   LAYOUT + SIDEBAR DROITE (footer en bas)
 ========================================================= */
 .layout{
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+
   display:flex;
   align-items:flex-start;
   gap: 18px;
+
   padding: 18px 16px;
-  flex: 1 0 auto;
+
+  flex: 1 0 auto; /* ✅ pousse le footer en bas */
 }
 
 .main-content{
@@ -166,29 +191,42 @@ body{
   margin-bottom: 16px;
 }
 
-/* SIDEBAR */
+/* Sidebar */
 .sidebar-right{
   width: 280px;
   flex: 0 0 280px;
+
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 12px;
+
+  position: sticky;
+  top: 88px;
 }
 
 .sidebar-right a{
   display:block;
-  padding: 12px;
+  padding: 12px 12px;
   border-radius: 12px;
   text-decoration:none;
   color: var(--text);
   font-weight: 600;
   font-size: 14px;
+  border: 1px solid transparent;
+  transition: background .2s ease, transform .15s ease, border-color .2s ease;
+}
+
+.sidebar-right a:hover{
+  background: rgba(59,130,246,0.08);
+  border-color: rgba(59,130,246,0.18);
+  transform: translateY(-1px);
 }
 
 .sidebar-right a.active{
   background: rgba(59,130,246,0.12);
+  border-color: rgba(59,130,246,0.26);
 }
 
 /* =========================================================
@@ -207,19 +245,37 @@ body{
   border-radius: 18px;
   box-shadow: 0 10px 22px rgba(0,0,0,0.10);
   padding: 16px;
+
   display:flex;
   flex-direction: column;
   gap: 8px;
+
+  transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
 }
 
-.credit-card h3{ font-size: 16px; }
-.credit-card p{ font-size: 20px; font-weight: 700; }
+.credit-card:hover{
+  transform: translateY(-2px);
+  border-color: rgba(59,130,246,0.22);
+  box-shadow: 0 14px 28px rgba(0,0,0,0.14);
+}
+
+.credit-card h3{
+  font-size: 16px;
+}
+
+.credit-card p{
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+}
 
 .credit-card .note{
+  display:inline-block;
   font-size: 12px;
   font-weight: 700;
   color: var(--muted);
   background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.16);
   border-radius: 999px;
   padding: 6px 10px;
   width: fit-content;
@@ -235,9 +291,15 @@ body{
   font-size: 14px;
   color: #fff;
   background: var(--primary);
+  transition: transform .15s ease, background .2s ease;
 }
 
-/* CONFIRMATION */
+.credit-card button:hover{
+  background: var(--primary-2);
+  transform: translateY(-1px);
+}
+
+/* Message de confirmation */
 #confirmation-message{
   display:none;
   margin-top: 14px;
@@ -250,7 +312,7 @@ body{
 }
 
 /* =========================================================
-   FOOTER
+   FOOTER (collé en bas)
 ========================================================= */
 .footer{
   width: 100%;
@@ -259,14 +321,40 @@ body{
   text-align: center;
   padding: 14px 12px;
   font-size: 13px;
-  margin-top: auto;
+
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+
+  margin-top: auto; /* ✅ footer en bas */
+}
+
+.footer a{
+  color: rgba(255,255,255,0.9);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.footer a:hover{
+  text-decoration: underline;
 }
 
 /* =========================================================
-   📱 MOBILE
+   RESPONSIVE
 ========================================================= */
-@media (max-width: 768px){
+@media (max-width: 1024px){
+  .sidebar-right{
+    width: 260px;
+    flex-basis: 260px;
+  }
+  .credit-packages{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 
+@media (max-width: 768px){
   .header{
     flex-direction: column;
     align-items: stretch;
@@ -274,30 +362,162 @@ body{
   }
 
   .nav-links{
+    width: 100%;
     justify-content: center;
   }
 
   .search-bar{
-    width: 100%;
     max-width: 100%;
+    min-width: 0;
   }
 
   .layout{
     flex-direction: column;
-    gap: 14px;
-    padding: 14px;
+    align-items: stretch;
   }
 
   .sidebar-right{
+    position: relative;
+    top: auto;
     width: 100%;
+    flex: 0 0 auto;
     order: 2;
   }
 
   .main-content{
     order: 1;
+    padding: 16px;
   }
 
   .credit-packages{
     grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 420px){
+  .header .logo{
+    font-size: 20px;
+    text-align: center;
+  }
+}
+/* =========================================================
+   🔥 FIX MOBILE TOTAL – ACHAT CRÉDITS
+========================================================= */
+@media (max-width: 768px){
+
+  /* ❌ Plus de sticky sur mobile */
+  .header{
+    position: relative;
+  }
+
+  .sidebar-right{
+    position: relative;
+    top: auto;
+  }
+
+  /* 📱 Layout 100% vertical */
+  .layout{
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding: 14px;
+  }
+
+  .main-content,
+  .sidebar-right{
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* 🧼 Cartes bien larges */
+  .credit-packages{
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .credit-card{
+    width: 100%;
+  }
+
+  /* Barre de recherche bien fluide */
+  .search-bar{
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+/* =========================
+   FIX iPhone - search géante
+   (favoris + parametre)
+========================= */
+
+/* 1) Empêche Safari de faire gonfler les flex items */
+.header{
+  flex-wrap: wrap;
+}
+
+.search-bar{
+  flex: 1 1 320px;
+  width: 100%;
+  max-width: 520px;
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  /* ✅ hauteur FIXE => plus de cercle */
+  height: 44px;
+  max-height: 44px;
+
+  padding: 0 10px;
+  border-radius: 14px; /* ✅ plus stable que 999px sur iOS */
+}
+
+/* si tu as un bouton loupe */
+.search-bar button{
+  height: 32px;
+  width: 40px;
+  flex-shrink: 0;
+}
+
+/* l’input */
+.search-bar input{
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+
+  height: 44px;
+  line-height: 44px;
+
+  padding: 0 8px;
+  border: none;
+  outline: none;
+
+  /* ✅ évite les styles iOS */
+  -webkit-appearance: none;
+  appearance: none;
+
+  /* ✅ évite le zoom iOS */
+  font-size: 16px;
+}
+
+/* Mobile : tout bien aligné */
+@media (max-width: 768px){
+  .header{
+    position: relative; /* évite bug sticky iOS */
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .nav-links{
+    width: 100%;
+    justify-content: center;
+  }
+
+  .search-bar{
+    max-width: 100%;
+    margin: 0 auto;
   }
 }
