@@ -32,18 +32,14 @@
 
 <div class="layout">
 
-  <!-- Liste des conversations (on la remplira plus tard si tu veux) -->
+  <!-- Liste des conversations : on branchera après -->
   <aside class="conversations-list">
     <h3>Discussions</h3>
-    <div id="conversationsPlaceholder" style="padding:10px; opacity:.7;">
-      (Liste des discussions à brancher ensuite)
-    </div>
+    <div style="padding:10px; opacity:.7;">(Liste des discussions à brancher ensuite)</div>
   </aside>
 
-  <!-- Zone de messagerie -->
   <main class="messagerie">
 
-    <!-- En-tête de la conversation -->
     <div class="conversation-header">
       <div class="avatar">
         <img src="images/utilisateur.jpg" alt="Avatar" id="recipientAvatar">
@@ -51,12 +47,10 @@
       <div class="pseudo">Discussion avec <strong id="recipientName">...</strong></div>
     </div>
 
-    <!-- Liste messages -->
-    <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;">
-      <!-- messages injectés ici -->
-    </div>
+    <!-- Messages -->
+    <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;"></div>
 
-    <!-- Formulaire d'envoi -->
+    <!-- Formulaire -->
     <form class="message-form" id="messageForm" autocomplete="off">
       <input id="messageInput" type="text" placeholder="Écris ton message..." required>
       <button id="sendBtn" type="submit">Envoyer pour 5 crédits</button>
@@ -64,7 +58,6 @@
 
   </main>
 
-  <!-- Barre latérale à droite -->
   <aside class="sidebar-right">
     <a href="mes-photos.html">Mes Photos</a>
     <a href="profil.html">Mon Profil</a>
@@ -91,7 +84,6 @@
   // ✅ REMPLACE ICI
   const SUPABASE_URL = "TON_SUPABASE_URL";
   const SUPABASE_ANON_KEY = "TON_SUPABASE_ANON_KEY";
-
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const recipientNameEl = document.getElementById("recipientName");
@@ -105,31 +97,19 @@
 
   let myUserId = null;
   let recipientId = null;
-  let realtimeChannel = null;
 
   function getQueryParam(param) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param);
+    return new URLSearchParams(window.location.search).get(param);
   }
 
   function escapeHtml(str) {
     return (str ?? "").replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
     }[m]));
-  }
-
-  function scrollToBottom() {
-    // petit timeout pour laisser le DOM se mettre à jour
-    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 50);
   }
 
   function renderMessage({ content, created_at, sender_id }) {
     const isMine = sender_id === myUserId;
-
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
     div.innerHTML = `
@@ -139,72 +119,53 @@
     messagesContainer.appendChild(div);
   }
 
-  function setUiRecipient(profile) {
-    recipientNameEl.textContent = profile?.username || "Utilisateur";
-    recipientAvatarEl.src = profile?.profile_photo || "images/utilisateur.jpg";
-    recipientAvatarEl.alt = profile?.username || "Avatar";
-  }
-
-  function setUiMe(profile) {
-    myAvatarEl.src = profile?.profile_photo || "images/utilisateur.jpg";
-    myAvatarEl.alt = profile?.username || "Ma photo";
-  }
-
   async function requireSession() {
     const { data, error } = await supabase.auth.getSession();
-    if (error) {
-      console.error(error);
-      alert("Erreur session. Ouvre la console F12.");
-      return null;
-    }
-    const session = data?.session;
-    if (!session) {
-      // Pas connecté => redirige
+    if (error) throw error;
+    if (!data?.session) {
       window.location.href = "connexion.html";
       return null;
     }
-    return session;
+    return data.session;
   }
 
-  async function loadMyProfile() {
-    const { data, error } = await supabase
+  async function loadProfiles() {
+    // Moi
+    const me = await supabase
       .from("profiles")
       .select("id, username, profile_photo")
       .eq("id", myUserId)
       .single();
 
-    if (error) {
-      console.warn("Profil perso non trouvé / RLS ?", error);
-      // on ne bloque pas la page
-      return null;
+    if (!me.error && me.data) {
+      myAvatarEl.src = me.data.profile_photo || "images/utilisateur.jpg";
+      myAvatarEl.alt = me.data.username || "Ma photo";
+    } else {
+      console.warn("Profil perso non lisible (profiles RLS?)", me.error);
     }
-    setUiMe(data);
-    return data;
-  }
 
-  async function loadRecipientProfile() {
-    const { data, error } = await supabase
+    // Destinataire
+    const other = await supabase
       .from("profiles")
       .select("id, username, profile_photo")
       .eq("id", recipientId)
       .single();
 
-    if (error || !data) {
-      console.error("Destinataire introuvable:", error);
+    if (other.error || !other.data) {
+      console.error("Destinataire introuvable:", other.error);
       alert("Utilisateur introuvable (profil inexistant ou accès refusé).");
-      // tu peux rediriger si tu veux :
-      // window.location.href = "accueil.html";
-      return null;
+      return false;
     }
 
-    setUiRecipient(data);
-    return data;
+    recipientNameEl.textContent = other.data.username || "Utilisateur";
+    recipientAvatarEl.src = other.data.profile_photo || "images/utilisateur.jpg";
+    recipientAvatarEl.alt = other.data.username || "Avatar";
+    return true;
   }
 
   async function loadMessages() {
     messagesContainer.innerHTML = "";
 
-    // On charge les messages où (moi->lui) OU (lui->moi)
     const { data, error } = await supabase
       .from("messages")
       .select("id, sender_id, receiver_id, content, created_at")
@@ -215,88 +176,26 @@
 
     if (error) {
       console.error("Erreur chargement messages:", error);
-      alert("Impossible de charger les messages (RLS/table). Ouvre la console F12.");
+      alert("Impossible de charger les messages (RLS/policies). Ouvre F12 > Console.");
       return;
     }
 
-    for (const msg of (data || [])) renderMessage(msg);
-    scrollToBottom();
+    (data || []).forEach(renderMessage);
   }
 
   async function sendMessage(text) {
-    const payload = {
-      sender_id: myUserId,
-      receiver_id: recipientId,
-      content: text
-    };
-
     const { data, error } = await supabase
       .from("messages")
-      .insert(payload)
+      .insert({ sender_id: myUserId, receiver_id: recipientId, content: text })
       .select("id, sender_id, receiver_id, content, created_at")
       .single();
 
     if (error) {
       console.error("Erreur envoi:", error);
-      alert("Envoi impossible (RLS/table). Ouvre la console F12.");
+      alert("Envoi impossible (RLS/policies). Ouvre F12 > Console.");
       return null;
     }
-
     return data;
-  }
-
-  async function subscribeRealtime() {
-    // Important: nécessite que Realtime soit activé sur la table messages (Supabase dashboard)
-    // On filtre sur les inserts et on affiche si ça concerne cette conversation
-    realtimeChannel = supabase
-      .channel("messages-realtime")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "messages" },
-        (payload) => {
-          const msg = payload.new;
-          const isThisConversation =
-            (msg.sender_id === myUserId && msg.receiver_id === recipientId) ||
-            (msg.sender_id === recipientId && msg.receiver_id === myUserId);
-
-          if (!isThisConversation) return;
-
-          // Évite doublon: si c'est mon message, je l'affiche déjà après insert
-          // (si tu veux, tu peux garder et faire un check d'id)
-          if (msg.sender_id === myUserId) return;
-
-          renderMessage(msg);
-          scrollToBottom();
-        }
-      )
-      .subscribe((status) => {
-        console.log("Realtime status:", status);
-      });
-  }
-
-  async function init() {
-    recipientId = getQueryParam("to");
-
-    if (!recipientId) {
-      alert("Lien invalide : il manque ?to=ID_DESTINATAIRE");
-      return;
-    }
-
-    const session = await requireSession();
-    if (!session) return;
-
-    myUserId = session.user.id;
-
-    // Profil moi + profil destinataire
-    await loadMyProfile();
-    const recipient = await loadRecipientProfile();
-    if (!recipient) return;
-
-    // Charger messages
-    await loadMessages();
-
-    // Realtime
-    await subscribeRealtime();
   }
 
   messageForm.addEventListener("submit", async (e) => {
@@ -305,14 +204,11 @@
     if (!text) return;
 
     sendBtn.disabled = true;
-
     const inserted = await sendMessage(text);
     if (inserted) {
       renderMessage(inserted);
       messageInput.value = "";
-      scrollToBottom();
     }
-
     sendBtn.disabled = false;
     messageInput.focus();
   });
@@ -323,13 +219,25 @@
     window.location.href = "connexion.html";
   });
 
-  window.addEventListener("beforeunload", async () => {
-    try {
-      if (realtimeChannel) await supabase.removeChannel(realtimeChannel);
-    } catch {}
-  });
+  (async function init() {
+    recipientId = getQueryParam("to");
+    if (!recipientId) {
+      alert("Lien invalide : il manque ?to=UUID_DESTINATAIRE");
+      return;
+    }
 
-  init();
+    const session = await requireSession();
+    if (!session) return;
+
+    myUserId = session.user.id;
+
+    console.log("Moi:", myUserId, "| Dest:", recipientId);
+
+    const ok = await loadProfiles();
+    if (!ok) return;
+
+    await loadMessages();
+  })();
 </script>
 
 </body>
