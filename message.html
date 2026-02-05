@@ -2,136 +2,335 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Messages - Pourflirter</title>
   <link rel="stylesheet" href="Design/message.css">
 </head>
 <body>
 
 <header class="header">
-<div class="logo">💙 <a href="accueil.html" style="text-decoration:none; color:inherit;"><span>Pourflirter</span></a></div>
+  <div class="logo">💙 <a href="accueil.html" style="text-decoration:none; color:inherit;"><span>Pourflirter</span></a></div>
 
   <div class="header-center">
     <div class="search-bar">
       <input type="text" placeholder="Recherche...">
-      <button>🔍</button>
+      <button type="button">🔍</button>
     </div>
   </div>
 
   <div class="header-actions">
     <div class="header-links">
-      <a href="#">Messages</a>
-      <a href="#">Crédits</a>
-      <a href="#">Déconnexion</a>
+      <a href="message.html">Messages</a>
+      <a href="achat_credits.html">Crédits</a>
+      <a href="#" id="logoutBtn">Déconnexion</a>
     </div>
     <div class="user-photo">
-      <img src="images/utilisateur.jpg" alt="Ma photo">
+      <img src="images/utilisateur.jpg" alt="Ma photo" id="myAvatar">
     </div>
   </div>
 </header>
 
-  <div class="layout">
+<div class="layout">
 
-    <!-- Liste des conversations précédentes -->
-    <aside class="conversations-list">
-      <h3>Discussions</h3>
-      <div class="contact">
-        <img src="images/emma.jpg" alt="Emma">
-        <span>Emma_Dream</span>
+  <!-- Liste des conversations (on la remplira plus tard si tu veux) -->
+  <aside class="conversations-list">
+    <h3>Discussions</h3>
+    <div id="conversationsPlaceholder" style="padding:10px; opacity:.7;">
+      (Liste des discussions à brancher ensuite)
+    </div>
+  </aside>
+
+  <!-- Zone de messagerie -->
+  <main class="messagerie">
+
+    <!-- En-tête de la conversation -->
+    <div class="conversation-header">
+      <div class="avatar">
+        <img src="images/utilisateur.jpg" alt="Avatar" id="recipientAvatar">
       </div>
-      <div class="contact unread">
-        <img src="images/leo.jpg" alt="Leo">
-        <span>Leo92</span>
-      </div>
-      <div class="contact unread">
-        <img src="images/sofia.jpg" alt="Sofia">
-        <span>SofiaSweet</span>
-      </div>
-    </aside>
+      <div class="pseudo">Discussion avec <strong id="recipientName">...</strong></div>
+    </div>
 
-    <!-- Zone de messagerie -->
-    <main class="messagerie">
+    <!-- Liste messages -->
+    <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;">
+      <!-- messages injectés ici -->
+    </div>
 
-      <!-- En-tête de la conversation -->
-      <div class="conversation-header">
-        <div class="avatar">
-          <img src="" alt="Avatar">
-        </div>
-        <div class="pseudo">Discussion avec <strong></strong></div>
-      </div>
+    <!-- Formulaire d'envoi -->
+    <form class="message-form" id="messageForm" autocomplete="off">
+      <input id="messageInput" type="text" placeholder="Écris ton message..." required>
+      <button id="sendBtn" type="submit">Envoyer pour 5 crédits</button>
+    </form>
 
-      <!-- Messages -->
-      <div class="message received">
-        Salut, comment vas-tu ?
-        <time>12:42</time>
-      </div>
+  </main>
 
-      <div class="message sent">
-        Très bien et toi ?
-        <time>12:44</time>
-      </div>
+  <!-- Barre latérale à droite -->
+  <aside class="sidebar-right">
+    <a href="mes-photos.html">Mes Photos</a>
+    <a href="profil.html">Mon Profil</a>
+    <a href="mes-favoris.html">Mes Favoris</a>
+    <a href="membres_bloques.html">Membres Bloqués</a>
+    <a href="achat_credits.html">Acheter Crédits</a>
+    <a href="parametre.html">Paramètres</a>
+  </aside>
 
-      <!-- Formulaire d'envoi -->
-      <form class="message-form">
-        <input type="text" placeholder="Écris ton message..." required>
-        <button type="submit">Envoyer pour 5 crédits</button>
-      </form>
+</div>
 
-    </main>
+<footer class="footer">
+  <a href="#">Service Clients</a>
+  <a href="#">CGV</a>
+  <a href="#">Protection des données</a>
+  <a href="#">Mentions légales</a>
+  <a href="#">EN / FR</a>
+  © 2025 Pourflirter. Tous droits réservés.
+</footer>
 
-    <!-- Barre latérale à droite -->
-    <aside class="sidebar-right">
-      <a href="mes-photos.html">Mes Photos</a>
-      <a href="profil.html">Mon Profil</a>
-      <a href="mes-favoris.html">Mes Favoris</a>
-      <a href="membres_bloques.html">Membres Bloqués</a>
-      <a href="achat_credits.html">Acheter Crédits</a>
-      <a href="parametre.html">Paramètres</a>
-    </aside>
+<script type="module">
+  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-  </div>
+  // ✅ REMPLACE ICI
+  const SUPABASE_URL = "TON_SUPABASE_URL";
+  const SUPABASE_ANON_KEY = "TON_SUPABASE_ANON_KEY";
 
-  <!-- Pied de page -->
-  <footer class="footer">
-    <a href="#">Service Clients</a>
-    <a href="#">CGV</a>
-    <a href="#">Protection des données</a>
-    <a href="#">Mentions légales</a>
-    <a href="#">EN / FR</a>
-    © 2025 Pourflirter. Tous droits réservés.
-  </footer>
+  const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  <!-- Script pour charger le bon destinataire -->
-  <script>
-    function getQueryParam(param) {
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get(param);
+  const recipientNameEl = document.getElementById("recipientName");
+  const recipientAvatarEl = document.getElementById("recipientAvatar");
+  const myAvatarEl = document.getElementById("myAvatar");
+  const messagesContainer = document.getElementById("messagesContainer");
+  const messageForm = document.getElementById("messageForm");
+  const messageInput = document.getElementById("messageInput");
+  const sendBtn = document.getElementById("sendBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  let myUserId = null;
+  let recipientId = null;
+  let realtimeChannel = null;
+
+  function getQueryParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+  }
+
+  function escapeHtml(str) {
+    return (str ?? "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
+    }[m]));
+  }
+
+  function scrollToBottom() {
+    // petit timeout pour laisser le DOM se mettre à jour
+    setTimeout(() => window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" }), 50);
+  }
+
+  function renderMessage({ content, created_at, sender_id }) {
+    const isMine = sender_id === myUserId;
+
+    const div = document.createElement("div");
+    div.className = "message " + (isMine ? "sent" : "received");
+    div.innerHTML = `
+      ${escapeHtml(content)}
+      <time>${new Date(created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</time>
+    `;
+    messagesContainer.appendChild(div);
+  }
+
+  function setUiRecipient(profile) {
+    recipientNameEl.textContent = profile?.username || "Utilisateur";
+    recipientAvatarEl.src = profile?.profile_photo || "images/utilisateur.jpg";
+    recipientAvatarEl.alt = profile?.username || "Avatar";
+  }
+
+  function setUiMe(profile) {
+    myAvatarEl.src = profile?.profile_photo || "images/utilisateur.jpg";
+    myAvatarEl.alt = profile?.username || "Ma photo";
+  }
+
+  async function requireSession() {
+    const { data, error } = await supabase.auth.getSession();
+    if (error) {
+      console.error(error);
+      alert("Erreur session. Ouvre la console F12.");
+      return null;
+    }
+    const session = data?.session;
+    if (!session) {
+      // Pas connecté => redirige
+      window.location.href = "connexion.html";
+      return null;
+    }
+    return session;
+  }
+
+  async function loadMyProfile() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, profile_photo")
+      .eq("id", myUserId)
+      .single();
+
+    if (error) {
+      console.warn("Profil perso non trouvé / RLS ?", error);
+      // on ne bloque pas la page
+      return null;
+    }
+    setUiMe(data);
+    return data;
+  }
+
+  async function loadRecipientProfile() {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, username, profile_photo")
+      .eq("id", recipientId)
+      .single();
+
+    if (error || !data) {
+      console.error("Destinataire introuvable:", error);
+      alert("Utilisateur introuvable (profil inexistant ou accès refusé).");
+      // tu peux rediriger si tu veux :
+      // window.location.href = "accueil.html";
+      return null;
     }
 
-    function loadConversation() {
-      const recipientId = getQueryParam('to');
-      if (!recipientId || !localStorage.getItem(recipientId)) {
-        alert("Utilisateur introuvable.");
-        return;
-      }
+    setUiRecipient(data);
+    return data;
+  }
 
-      const recipientData = JSON.parse(localStorage.getItem(recipientId));
+  async function loadMessages() {
+    messagesContainer.innerHTML = "";
 
-      // Afficher le pseudo
-      document.querySelector('.pseudo strong').textContent = recipientData.username || "Utilisateur";
+    // On charge les messages où (moi->lui) OU (lui->moi)
+    const { data, error } = await supabase
+      .from("messages")
+      .select("id, sender_id, receiver_id, content, created_at")
+      .or(
+        `and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`
+      )
+      .order("created_at", { ascending: true });
 
-      // Afficher la photo de profil
-      const avatarImg = document.querySelector('.avatar img');
-      if (recipientData.profilePhoto) {
-        avatarImg.src = recipientData.profilePhoto;
-        avatarImg.alt = recipientData.username;
-      } else {
-        avatarImg.src = "images/utilisateur.jpg"; // image par défaut
-        avatarImg.alt = "Avatar";
-      }
+    if (error) {
+      console.error("Erreur chargement messages:", error);
+      alert("Impossible de charger les messages (RLS/table). Ouvre la console F12.");
+      return;
     }
 
-    loadConversation();
-  </script>
+    for (const msg of (data || [])) renderMessage(msg);
+    scrollToBottom();
+  }
+
+  async function sendMessage(text) {
+    const payload = {
+      sender_id: myUserId,
+      receiver_id: recipientId,
+      content: text
+    };
+
+    const { data, error } = await supabase
+      .from("messages")
+      .insert(payload)
+      .select("id, sender_id, receiver_id, content, created_at")
+      .single();
+
+    if (error) {
+      console.error("Erreur envoi:", error);
+      alert("Envoi impossible (RLS/table). Ouvre la console F12.");
+      return null;
+    }
+
+    return data;
+  }
+
+  async function subscribeRealtime() {
+    // Important: nécessite que Realtime soit activé sur la table messages (Supabase dashboard)
+    // On filtre sur les inserts et on affiche si ça concerne cette conversation
+    realtimeChannel = supabase
+      .channel("messages-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "messages" },
+        (payload) => {
+          const msg = payload.new;
+          const isThisConversation =
+            (msg.sender_id === myUserId && msg.receiver_id === recipientId) ||
+            (msg.sender_id === recipientId && msg.receiver_id === myUserId);
+
+          if (!isThisConversation) return;
+
+          // Évite doublon: si c'est mon message, je l'affiche déjà après insert
+          // (si tu veux, tu peux garder et faire un check d'id)
+          if (msg.sender_id === myUserId) return;
+
+          renderMessage(msg);
+          scrollToBottom();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime status:", status);
+      });
+  }
+
+  async function init() {
+    recipientId = getQueryParam("to");
+
+    if (!recipientId) {
+      alert("Lien invalide : il manque ?to=ID_DESTINATAIRE");
+      return;
+    }
+
+    const session = await requireSession();
+    if (!session) return;
+
+    myUserId = session.user.id;
+
+    // Profil moi + profil destinataire
+    await loadMyProfile();
+    const recipient = await loadRecipientProfile();
+    if (!recipient) return;
+
+    // Charger messages
+    await loadMessages();
+
+    // Realtime
+    await subscribeRealtime();
+  }
+
+  messageForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    sendBtn.disabled = true;
+
+    const inserted = await sendMessage(text);
+    if (inserted) {
+      renderMessage(inserted);
+      messageInput.value = "";
+      scrollToBottom();
+    }
+
+    sendBtn.disabled = false;
+    messageInput.focus();
+  });
+
+  logoutBtn.addEventListener("click", async (e) => {
+    e.preventDefault();
+    await supabase.auth.signOut();
+    window.location.href = "connexion.html";
+  });
+
+  window.addEventListener("beforeunload", async () => {
+    try {
+      if (realtimeChannel) await supabase.removeChannel(realtimeChannel);
+    } catch {}
+  });
+
+  init();
+</script>
 
 </body>
 </html>
