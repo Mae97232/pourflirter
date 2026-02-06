@@ -25,7 +25,8 @@
       <a href="#" id="logoutBtn">Déconnexion</a>
     </div>
     <div class="user-photo">
-      <img src="images/utilisateur.jpg" alt="Ma photo" id="myAvatar">
+      <img src="images/utilisateur.jpg" alt="Ma photo" id="myAvatar"
+           onerror="this.src='images/default-avatar.jpg'">
     </div>
   </div>
 </header>
@@ -42,10 +43,14 @@
 
     <div class="conversation-header">
       <div class="avatar">
-        <img src="images/utilisateur.jpg" alt="Avatar" id="recipientAvatar">
+        <img src="images/utilisateur.jpg" alt="Avatar" id="recipientAvatar"
+             onerror="this.src='images/default-avatar.jpg'">
       </div>
       <div class="pseudo">Discussion avec <strong id="recipientName">...</strong></div>
     </div>
+
+    <!-- Debug errors -->
+    <div id="debugBox" style="padding:10px; color:#b00020; font-size:14px;"></div>
 
     <!-- Messages -->
     <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;"></div>
@@ -80,10 +85,24 @@
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../supabase.js"; 
+  // ⚠️ Si message.html est à la racine, mets: "./supabase.js"
 
-  // ✅ REMPLACE ICI
-  const SUPABASE_URL = "TON_SUPABASE_URL";
-  const SUPABASE_ANON_KEY = "TON_SUPABASE_ANON_KEY";
+  const debugBox = document.getElementById("debugBox");
+  function setError(msg, err) {
+    console.error(msg, err || "");
+    debugBox.textContent = msg + (err?.message ? " — " + err.message : "");
+  }
+  function clearError() { debugBox.textContent = ""; }
+
+  // Vérif rapide des variables
+  if (!SUPABASE_URL || !/^https:\/\/.+\.supabase\.co/i.test(SUPABASE_URL)) {
+    setError("SUPABASE_URL invalide dans supabase.js (doit être https://xxxx.supabase.co).");
+  }
+  if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.length < 20) {
+    setError("SUPABASE_ANON_KEY invalide dans supabase.js (mets la anon public key).");
+  }
+
   const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   const recipientNameEl = document.getElementById("recipientName");
@@ -138,7 +157,7 @@
       .single();
 
     if (!me.error && me.data) {
-      myAvatarEl.src = me.data.profile_photo || "images/utilisateur.jpg";
+      myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
       myAvatarEl.alt = me.data.username || "Ma photo";
     } else {
       console.warn("Profil perso non lisible (profiles RLS?)", me.error);
@@ -152,13 +171,12 @@
       .single();
 
     if (other.error || !other.data) {
-      console.error("Destinataire introuvable:", other.error);
-      alert("Utilisateur introuvable (profil inexistant ou accès refusé).");
+      setError("Utilisateur introuvable (profiles) : mauvais ?to=UUID ou accès refusé", other.error);
       return false;
     }
 
     recipientNameEl.textContent = other.data.username || "Utilisateur";
-    recipientAvatarEl.src = other.data.profile_photo || "images/utilisateur.jpg";
+    recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
     recipientAvatarEl.alt = other.data.username || "Avatar";
     return true;
   }
@@ -175,8 +193,7 @@
       .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Erreur chargement messages:", error);
-      alert("Impossible de charger les messages (RLS/policies). Ouvre F12 > Console.");
+      setError("Impossible de charger les messages (RLS/policies messages)", error);
       return;
     }
 
@@ -191,8 +208,7 @@
       .single();
 
     if (error) {
-      console.error("Erreur envoi:", error);
-      alert("Envoi impossible (RLS/policies). Ouvre F12 > Console.");
+      setError("Envoi impossible (policy INSERT messages)", error);
       return null;
     }
     return data;
@@ -200,8 +216,15 @@
 
   messageForm.addEventListener("submit", async (e) => {
     e.preventDefault();
+    clearError();
+
     const text = messageInput.value.trim();
     if (!text) return;
+
+    if (!recipientId) {
+      setError("Destinataire manquant. Ouvre la page avec ?to=UUID_DESTINATAIRE");
+      return;
+    }
 
     sendBtn.disabled = true;
     const inserted = await sendMessage(text);
@@ -222,21 +245,26 @@
   (async function init() {
     recipientId = getQueryParam("to");
     if (!recipientId) {
-      alert("Lien invalide : il manque ?to=UUID_DESTINATAIRE");
+      setError("Lien invalide : il manque ?to=UUID_DESTINATAIRE");
       return;
     }
 
-    const session = await requireSession();
-    if (!session) return;
+    try {
+      const session = await requireSession();
+      if (!session) return;
 
-    myUserId = session.user.id;
+      myUserId = session.user.id;
 
-    console.log("Moi:", myUserId, "| Dest:", recipientId);
+      console.log("Moi:", myUserId, "| Dest:", recipientId);
 
-    const ok = await loadProfiles();
-    if (!ok) return;
+      const ok = await loadProfiles();
+      if (!ok) return;
 
-    await loadMessages();
+      await loadMessages();
+      clearError();
+    } catch (e) {
+      setError("Erreur Supabase (session/connexion)", e);
+    }
   })();
 </script>
 
