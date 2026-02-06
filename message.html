@@ -85,7 +85,7 @@
 
 <script type="module">
   import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-  import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../supabase.js"; 
+  import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../supabase.js";
   // ⚠️ Si message.html est à la racine, mets: "./supabase.js"
 
   const debugBox = document.getElementById("debugBox");
@@ -243,9 +243,11 @@
   });
 
   (async function init() {
-    recipientId = getQueryParam("to");
+    // ✅ accepte ?to=... OU ?user=...
+    recipientId = getQueryParam("to") || getQueryParam("user");
+
     if (!recipientId) {
-      setError("Lien invalide : il manque ?to=UUID_DESTINATAIRE");
+      setError("Lien invalide : il manque ?to=UUID_DESTINATAIRE (ou ?user=UUID_DESTINATAIRE)");
       return;
     }
 
