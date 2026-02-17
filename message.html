@@ -87,7 +87,7 @@
     console.error(msg, err || "");
     debugBox.textContent = msg + (err?.message ? "\n" + err.message : "");
   }
-  function clearError() { debugBox.textContent = ""; }
+  function clearError(){ debugBox.textContent=""; }
 
   const recipientNameEl = document.getElementById("recipientName");
   const recipientAvatarEl = document.getElementById("recipientAvatar");
@@ -98,14 +98,14 @@
   const sendBtn = document.getElementById("sendBtn");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  const params = new URLSearchParams(window.location.search);
-  const recipientId = params.get("to") || params.get("user"); // ✅ accepte les deux
+  const params = new URLSearchParams(location.search);
+  const recipientId = params.get("to") || params.get("user");
 
   let myUserId = null;
 
   function escapeHtml(str) {
     return (str ?? "").replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
     }[m]));
   }
 
@@ -113,70 +113,40 @@
     const isMine = sender_id === myUserId;
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
-    div.innerHTML = `
-      ${escapeHtml(content)}
-      <time>${new Date(created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</time>
-    `;
+    div.innerHTML = `${escapeHtml(content)} <time>${new Date(created_at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</time>`;
     messagesContainer.appendChild(div);
   }
 
   async function requireSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (!data?.session) {
-      window.location.href = "connexion.html";
-      return null;
-    }
+    if (!data?.session) { location.href="connexion.html"; return null; }
     return data.session;
   }
 
   async function loadProfiles() {
-    // Moi
-    const me = await supabase
-      .from("profiles")
-      .select("id, user_id, username, profile_photo")
-      .or(`id.eq.${myUserId},user_id.eq.${myUserId}`)
-      .maybeSingle();
+    // moi
+    const me = await supabase.from("profiles").select("username, profile_photo").or(`id.eq.${myUserId},user_id.eq.${myUserId}`).maybeSingle();
+    if (!me.error && me.data) myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
 
-    if (!me.error && me.data) {
-      myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
-      myAvatarEl.alt = me.data.username || "Ma photo";
-    }
-
-    // Destinataire
-    const other = await supabase
-      .from("profiles")
-      .select("id, user_id, username, profile_photo")
-      .or(`id.eq.${recipientId},user_id.eq.${recipientId}`)
-      .maybeSingle();
-
-    if (other.error || !other.data) {
-      setError("Destinataire introuvable dans profiles (id ou user_id).", other.error);
-      return false;
-    }
+    // destinataire
+    const other = await supabase.from("profiles").select("username, profile_photo").or(`id.eq.${recipientId},user_id.eq.${recipientId}`).maybeSingle();
+    if (other.error || !other.data) { setError("Destinataire introuvable dans profiles.", other.error); return false; }
 
     recipientNameEl.textContent = other.data.username || "Utilisateur";
     recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
-    recipientAvatarEl.alt = other.data.username || "Avatar";
     return true;
   }
 
   async function loadMessages() {
     messagesContainer.innerHTML = "";
-
     const { data, error } = await supabase
       .from("messages")
       .select("id, sender_id, receiver_id, content, created_at")
-      .or(
-        `and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`
-      )
+      .or(`and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`)
       .order("created_at", { ascending: true });
 
-    if (error) {
-      setError("Impossible de charger les messages (RLS/policies messages).", error);
-      return;
-    }
-
+    if (error) { setError("Chargement messages impossible.", error); return; }
     (data || []).forEach(renderMessage);
   }
 
@@ -187,29 +157,23 @@
       .select("id, sender_id, receiver_id, content, created_at")
       .single();
 
-    if (error) {
-      setError("Envoi impossible (INSERT messages).", error);
-      return null;
-    }
+    if (error) { setError("Envoi impossible.", error); return null; }
     return data;
   }
 
   messageForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
-
     const text = messageInput.value.trim();
     if (!text) return;
 
     sendBtn.disabled = true;
     const inserted = await sendMessage(text);
-
     if (inserted) {
       renderMessage(inserted);
       messageInput.value = "";
       await loadMessages();
     }
-
     sendBtn.disabled = false;
     messageInput.focus();
   });
@@ -217,31 +181,27 @@
   logoutBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     await supabase.auth.signOut();
-    window.location.href = "connexion.html";
+    location.href="connexion.html";
   });
 
-  (async function init() {
-    try {
-      if (!recipientId) {
-        setError("Lien invalide : il manque ?user=UUID (ou ?to=UUID).");
-        return;
-      }
-
+  (async function init(){
+    try{
+      if(!recipientId){ setError("Lien invalide: il manque ?user=UUID (ou ?to=UUID)"); return; }
       const session = await requireSession();
-      if (!session) return;
-
+      if(!session) return;
       myUserId = session.user.id;
 
       const ok = await loadProfiles();
-      if (!ok) return;
+      if(!ok) return;
 
       await loadMessages();
       clearError();
-    } catch (e) {
-      setError("Erreur init (session / supabase).", e);
+    }catch(e){
+      setError("Erreur init.", e);
     }
   })();
 </script>
+
 
 </body>
 </html>
