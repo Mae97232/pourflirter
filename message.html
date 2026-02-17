@@ -48,8 +48,6 @@
       <div class="pseudo">Discussion avec <strong id="recipientName">...</strong></div>
     </div>
 
-    <!-- Statut + erreurs -->
-    <div id="statusBox" style="padding:10px; color:#444; font-size:13px; white-space:pre-wrap;"></div>
     <div id="debugBox" style="padding:10px; color:#b00020; font-size:14px; white-space:pre-wrap;"></div>
 
     <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;"></div>
@@ -82,36 +80,14 @@
 </footer>
 
 <script type="module">
-  import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+  import { supabase } from "./supabaseClient.js";
 
-  const statusBox = document.getElementById("statusBox");
   const debugBox = document.getElementById("debugBox");
-  function setStatus(msg) { statusBox.textContent = msg || ""; }
   function setError(msg, err) {
     console.error(msg, err || "");
     debugBox.textContent = msg + (err?.message ? "\n" + err.message : "");
   }
   function clearError() { debugBox.textContent = ""; }
-
-  // ✅ Essayez automatiquement de charger supabase.js depuis le bon chemin
-  async function loadSupabaseConfig() {
-    // 1) même dossier que message.html (GitHub Pages /pourflirter/)
-    try { return await import("./supabase.js"); } catch {}
-    // 2) parent (si message.html est dans /public)
-    try { return await import("../supabase.js"); } catch (e) {
-      throw new Error("Impossible d'importer supabase.js. Mets supabase.js au même niveau que message.html OU corrige le chemin.");
-    }
-  }
-
-  function getQueryParam(param) {
-    return new URLSearchParams(window.location.search).get(param);
-  }
-
-  function escapeHtml(str) {
-    return (str ?? "").replace(/[&<>"']/g, (m) => ({
-      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-    }[m]));
-  }
 
   const recipientNameEl = document.getElementById("recipientName");
   const recipientAvatarEl = document.getElementById("recipientAvatar");
@@ -122,9 +98,16 @@
   const sendBtn = document.getElementById("sendBtn");
   const logoutBtn = document.getElementById("logoutBtn");
 
-  let supabase;
+  const params = new URLSearchParams(window.location.search);
+  const recipientId = params.get("to") || params.get("user"); // ✅ accepte les deux
+
   let myUserId = null;
-  let recipientAuthId = null;
+
+  function escapeHtml(str) {
+    return (str ?? "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+    }[m]));
+  }
 
   function renderMessage({ content, created_at, sender_id }) {
     const isMine = sender_id === myUserId;
@@ -147,46 +130,45 @@
     return data.session;
   }
 
-  async function loadMyProfile() {
-    // tente profiles.id = auth.uid()
-    let me = await supabase.from("profiles").select("username, profile_photo").eq("id", myUserId).maybeSingle();
-    if (!me.error && me.data) {
-      myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
-      return;
-    }
-    // fallback profiles.user_id = auth.uid()
-    me = await supabase.from("profiles").select("username, profile_photo").eq("user_id", myUserId).maybeSingle();
-    if (!me.error && me.data) {
-      myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
-    }
-  }
+  async function loadProfiles() {
+    // Moi
+    const me = await supabase
+      .from("profiles")
+      .select("id, user_id, username, profile_photo")
+      .or(`id.eq.${myUserId},user_id.eq.${myUserId}`)
+      .maybeSingle();
 
-  async function loadRecipientProfile() {
-    // tente profiles.id = recipientAuthId
-    let other = await supabase.from("profiles").select("username, profile_photo").eq("id", recipientAuthId).maybeSingle();
-    if (!other.error && other.data) {
-      recipientNameEl.textContent = other.data.username || "Utilisateur";
-      recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
-      return true;
+    if (!me.error && me.data) {
+      myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
+      myAvatarEl.alt = me.data.username || "Ma photo";
     }
-    // fallback profiles.user_id = recipientAuthId
-    other = await supabase.from("profiles").select("username, profile_photo").eq("user_id", recipientAuthId).maybeSingle();
-    if (!other.error && other.data) {
-      recipientNameEl.textContent = other.data.username || "Utilisateur";
-      recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
-      return true;
+
+    // Destinataire
+    const other = await supabase
+      .from("profiles")
+      .select("id, user_id, username, profile_photo")
+      .or(`id.eq.${recipientId},user_id.eq.${recipientId}`)
+      .maybeSingle();
+
+    if (other.error || !other.data) {
+      setError("Destinataire introuvable dans profiles (id ou user_id).", other.error);
+      return false;
     }
-    setError("Destinataire introuvable dans profiles. Ton lien doit contenir un UUID auth valide.", other.error);
-    return false;
+
+    recipientNameEl.textContent = other.data.username || "Utilisateur";
+    recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
+    recipientAvatarEl.alt = other.data.username || "Avatar";
+    return true;
   }
 
   async function loadMessages() {
     messagesContainer.innerHTML = "";
+
     const { data, error } = await supabase
       .from("messages")
       .select("id, sender_id, receiver_id, content, created_at")
       .or(
-        `and(sender_id.eq.${myUserId},receiver_id.eq.${recipientAuthId}),and(sender_id.eq.${recipientAuthId},receiver_id.eq.${myUserId})`
+        `and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`
       )
       .order("created_at", { ascending: true });
 
@@ -194,13 +176,14 @@
       setError("Impossible de charger les messages (RLS/policies messages).", error);
       return;
     }
+
     (data || []).forEach(renderMessage);
   }
 
   async function sendMessage(text) {
     const { data, error } = await supabase
       .from("messages")
-      .insert({ sender_id: myUserId, receiver_id: recipientAuthId, content: text })
+      .insert({ sender_id: myUserId, receiver_id: recipientId, content: text })
       .select("id, sender_id, receiver_id, content, created_at")
       .single();
 
@@ -218,18 +201,15 @@
     const text = messageInput.value.trim();
     if (!text) return;
 
-    if (!recipientAuthId) {
-      setError("Destinataire manquant. Ouvre : message.html?user=UUID (ou ?to=UUID)");
-      return;
-    }
-
     sendBtn.disabled = true;
     const inserted = await sendMessage(text);
+
     if (inserted) {
       renderMessage(inserted);
       messageInput.value = "";
-      await loadMessages(); // recharge pour être sûr
+      await loadMessages();
     }
+
     sendBtn.disabled = false;
     messageInput.focus();
   });
@@ -241,46 +221,24 @@
   });
 
   (async function init() {
-    setStatus("Initialisation...");
     try {
-      const cfg = await loadSupabaseConfig();
-      const SUPABASE_URL = cfg.SUPABASE_URL;
-      const SUPABASE_ANON_KEY = cfg.SUPABASE_ANON_KEY;
-
-      if (!SUPABASE_URL || !/^https:\/\/.+\.supabase\.co/i.test(SUPABASE_URL)) {
-        setError("SUPABASE_URL invalide dans supabase.js (doit être https://xxxx.supabase.co).");
-        return;
-      }
-      if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY.length < 20) {
-        setError("SUPABASE_ANON_KEY invalide dans supabase.js (mets la anon public key).");
-        return;
-      }
-
-      supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-      // ✅ accepte ?to=... OU ?user=...
-      recipientAuthId = getQueryParam("to") || getQueryParam("user");
-      if (!recipientAuthId) {
+      if (!recipientId) {
         setError("Lien invalide : il manque ?user=UUID (ou ?to=UUID).");
         return;
       }
 
       const session = await requireSession();
       if (!session) return;
+
       myUserId = session.user.id;
 
-      setStatus(`OK\nMoi(auth): ${myUserId}\nDest(URL): ${recipientAuthId}`);
-
-      await loadMyProfile();
-
-      const ok = await loadRecipientProfile();
+      const ok = await loadProfiles();
       if (!ok) return;
 
       await loadMessages();
       clearError();
-      setStatus(`OK\nMoi(auth): ${myUserId}\nDest(URL): ${recipientAuthId}\nMessages chargés.`);
     } catch (e) {
-      setError("Erreur init (import supabase.js / session / config).", e);
+      setError("Erreur init (session / supabase).", e);
     }
   })();
 </script>
