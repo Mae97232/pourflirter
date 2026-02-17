@@ -113,7 +113,10 @@
     const isMine = sender_id === myUserId;
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
-    div.innerHTML = `${escapeHtml(content)} <time>${new Date(created_at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</time>`;
+    div.innerHTML = `
+      ${escapeHtml(content)}
+      <time>${new Date(created_at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</time>
+    `;
     messagesContainer.appendChild(div);
   }
 
@@ -125,16 +128,33 @@
   }
 
   async function loadProfiles() {
-    // moi
-    const me = await supabase.from("profiles").select("username, profile_photo").or(`id.eq.${myUserId},user_id.eq.${myUserId}`).maybeSingle();
-    if (!me.error && me.data) myAvatarEl.src = me.data.profile_photo || myAvatarEl.src;
+    // Moi (on récupère juste username)
+    const me = await supabase
+      .from("profiles")
+      .select("username")
+      .or(`id.eq.${myUserId},user_id.eq.${myUserId}`)
+      .maybeSingle();
 
-    // destinataire
-    const other = await supabase.from("profiles").select("username, profile_photo").or(`id.eq.${recipientId},user_id.eq.${recipientId}`).maybeSingle();
-    if (other.error || !other.data) { setError("Destinataire introuvable dans profiles.", other.error); return false; }
+    if (!me.error && me.data) {
+      myAvatarEl.src = "images/utilisateur.jpg"; // avatar par défaut
+      myAvatarEl.alt = me.data.username || "Moi";
+    }
+
+    // Destinataire (juste username)
+    const other = await supabase
+      .from("profiles")
+      .select("username")
+      .or(`id.eq.${recipientId},user_id.eq.${recipientId}`)
+      .maybeSingle();
+
+    if (other.error || !other.data) {
+      setError("Destinataire introuvable dans profiles.", other.error);
+      return false;
+    }
 
     recipientNameEl.textContent = other.data.username || "Utilisateur";
-    recipientAvatarEl.src = other.data.profile_photo || recipientAvatarEl.src;
+    recipientAvatarEl.src = "images/utilisateur.jpg"; // avatar par défaut
+    recipientAvatarEl.alt = other.data.username || "Avatar";
     return true;
   }
 
@@ -202,6 +222,6 @@
   })();
 </script>
 
-
 </body>
 </html>
+
