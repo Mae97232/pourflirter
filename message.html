@@ -157,16 +157,7 @@
 
   function getProfileImage(profile) {
     if (!profile) return DEFAULT_AVATAR;
-
-    return (
-      profile.avatar_url ||
-      profile.photo_url ||
-      profile.image_url ||
-      profile.avatar ||
-      profile.photo ||
-      profile.image ||
-      DEFAULT_AVATAR
-    );
+    return profile.photo || DEFAULT_AVATAR;
   }
 
   function scrollMessagesToBottom() {
@@ -221,7 +212,7 @@
   async function loadMyProfile() {
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, username, photo")
       .eq("id", myUserId)
       .maybeSingle();
 
@@ -246,7 +237,7 @@
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, username, photo")
       .eq("id", recipientId)
       .maybeSingle();
 
@@ -362,7 +353,7 @@
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("*")
+      .select("id, username, photo")
       .in("id", uniqueUserIds);
 
     if (profilesError) {
