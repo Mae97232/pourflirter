@@ -72,7 +72,7 @@
 
     <div
       id="messagesContainer"
-      style="display:flex; flex-direction:column; gap:10px; padding:10px;"
+      style="display:flex; flex-direction:column; gap:10px; padding:10px; overflow-y:auto;"
     ></div>
 
     <form class="message-form" id="messageForm" autocomplete="off">
@@ -110,6 +110,8 @@
 <script type="module">
   import { supabase } from "./supabaseClient.js";
 
+  const DEFAULT_AVATAR = "images/utilisateur.jpg";
+
   const debugBox = document.getElementById("debugBox");
   const recipientNameEl = document.getElementById("recipientName");
   const recipientAvatarEl = document.getElementById("recipientAvatar");
@@ -126,6 +128,7 @@
 
   let myUserId = null;
   let realtimeChannel = null;
+  let loadedMessageIds = new Set();
 
   function setError(msg, err = null) {
     console.error(msg, err || "");
@@ -152,16 +155,44 @@
     }[m]));
   }
 
-  function scrollMessagesToBottom() {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  function getProfileImage(profile) {
+    if (!profile) return DEFAULT_AVATAR;
+
+    return (
+      profile.avatar_url ||
+      profile.photo_url ||
+      profile.image_url ||
+      profile.avatar ||
+      profile.photo ||
+      profile.image ||
+      DEFAULT_AVATAR
+    );
   }
 
-  function renderMessage(message) {
-    const { content, created_at, sender_id } = message;
+  function scrollMessagesToBottom() {
+    requestAnimationFrame(() => {
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+  }
+
+  function clearMessages() {
+    messagesContainer.innerHTML = "";
+    loadedMessageIds.clear();
+  }
+
+  function renderMessage(message, force = false) {
+    if (!message) return;
+    if (!force && message.id && loadedMessageIds.has(message.id)) return;
+
+    const { id, content, created_at, sender_id } = message;
     const isMine = sender_id === myUserId;
+
+    if (id) loadedMessageIds.add(id);
 
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
+    if (id) div.dataset.messageId = id;
+
     div.innerHTML = `
       <div>${escapeHtml(content)}</div>
       <time style="display:block; font-size:12px; opacity:.7; margin-top:4px;">
@@ -190,18 +221,21 @@
   async function loadMyProfile() {
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, username")
+      .select("*")
       .eq("id", myUserId)
       .maybeSingle();
 
     if (error) {
       console.warn("Profil utilisateur introuvable :", error.message);
+      myAvatarEl.src = DEFAULT_AVATAR;
       return null;
     }
 
     if (data) {
-      myAvatarEl.src = "images/utilisateur.jpg";
+      myAvatarEl.src = getProfileImage(data);
       myAvatarEl.alt = data.username || "Moi";
+    } else {
+      myAvatarEl.src = DEFAULT_AVATAR;
     }
 
     return data;
@@ -212,26 +246,30 @@
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("id, username")
+      .select("*")
       .eq("id", recipientId)
       .maybeSingle();
 
     if (error || !data) {
       setError("Destinataire introuvable dans profiles.", error);
+      recipientNameEl.textContent = "...";
+      recipientAvatarEl.src = DEFAULT_AVATAR;
       return null;
     }
 
     recipientNameEl.textContent = data.username || "Utilisateur";
-    recipientAvatarEl.src = "images/utilisateur.jpg";
+    recipientAvatarEl.src = getProfileImage(data);
     recipientAvatarEl.alt = data.username || "Avatar";
 
     return data;
   }
 
-  async function loadMessages() {
+  async function loadMessages(options = {}) {
+    const { autoScroll = false } = options;
+
     if (!recipientId || !myUserId) return;
 
-    messagesContainer.innerHTML = "";
+    clearMessages();
 
     const { data, error } = await supabase
       .from("messages")
@@ -246,8 +284,11 @@
       return;
     }
 
-    (data || []).forEach(renderMessage);
-    scrollMessagesToBottom();
+    (data || []).forEach((msg) => renderMessage(msg, true));
+
+    if (autoScroll) {
+      scrollMessagesToBottom();
+    }
   }
 
   async function markMessagesAsRead() {
@@ -294,7 +335,7 @@
 
     const { data: allMessages, error } = await supabase
       .from("messages")
-      .select("sender_id, receiver_id, content, created_at")
+      .select("sender_id, receiver_id, content, created_at, read")
       .or(`sender_id.eq.${myUserId},receiver_id.eq.${myUserId}`)
       .order("created_at", { ascending: false });
 
@@ -321,7 +362,7 @@
 
     const { data: profiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("id, username")
+      .select("*")
       .in("id", uniqueUserIds);
 
     if (profilesError) {
@@ -335,13 +376,16 @@
       .map((userId) => {
         const profile = profileMap.get(userId);
         const username = profile?.username || "Utilisateur";
+        const avatar = getProfileImage(profile);
         const active = userId === recipientId;
 
         return `
           <a
             href="message.html?to=${encodeURIComponent(userId)}"
             style="
-              display:block;
+              display:flex;
+              align-items:center;
+              gap:10px;
               padding:10px;
               margin-bottom:8px;
               border-radius:10px;
@@ -351,7 +395,13 @@
               border:${active ? "1px solid #4a7cff" : "1px solid #e5e5e5"};
             "
           >
-            ${escapeHtml(username)}
+            <img
+              src="${escapeHtml(avatar)}"
+              alt="${escapeHtml(username)}"
+              style="width:42px; height:42px; border-radius:50%; object-fit:cover; flex-shrink:0;"
+              onerror="this.src='${DEFAULT_AVATAR}'"
+            />
+            <span style="font-weight:600;">${escapeHtml(username)}</span>
           </a>
         `;
       })
@@ -381,7 +431,8 @@
             (newMessage.sender_id === recipientId && newMessage.receiver_id === myUserId);
 
           if (isThisConversation) {
-            await loadMessages();
+            renderMessage(newMessage);
+            scrollMessagesToBottom();
             await markMessagesAsRead();
           }
 
@@ -419,11 +470,12 @@
     sendBtn.disabled = true;
 
     const inserted = await sendMessage(text);
+
     if (inserted) {
       messageInput.value = "";
-      await loadMessages();
-      await loadConversations();
+      renderMessage(inserted);
       scrollMessagesToBottom();
+      await loadConversations();
     }
 
     sendBtn.disabled = false;
@@ -454,6 +506,7 @@
 
       if (!recipientId) {
         recipientNameEl.textContent = "...";
+        recipientAvatarEl.src = DEFAULT_AVATAR;
         setInfo("Sélectionne une discussion à gauche pour afficher les messages.");
         subscribeToRealtime();
         return;
@@ -462,7 +515,7 @@
       const recipientProfile = await loadRecipientProfile();
       if (!recipientProfile) return;
 
-      await loadMessages();
+      await loadMessages({ autoScroll: true });
       await markMessagesAsRead();
       clearError();
       subscribeToRealtime();
