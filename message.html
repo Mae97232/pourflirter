@@ -1,19 +1,24 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Messages - Pourflirter</title>
-  <link rel="stylesheet" href="Design/message.css">
+  <link rel="stylesheet" href="Design/message.css" />
 </head>
 <body>
 
 <header class="header">
-  <div class="logo">💙 <a href="accueil.html" style="text-decoration:none; color:inherit;"><span>Pourflirter</span></a></div>
+  <div class="logo">
+    💙
+    <a href="accueil.html" style="text-decoration:none; color:inherit;">
+      <span>Pourflirter</span>
+    </a>
+  </div>
 
   <div class="header-center">
     <div class="search-bar">
-      <input type="text" placeholder="Recherche...">
+      <input type="text" placeholder="Recherche..." />
       <button type="button">🔍</button>
     </div>
   </div>
@@ -25,8 +30,12 @@
       <a href="#" id="logoutBtn">Déconnexion</a>
     </div>
     <div class="user-photo">
-      <img src="images/utilisateur.jpg" alt="Ma photo" id="myAvatar"
-           onerror="this.src='images/utilisateur.jpg'">
+      <img
+        src="images/utilisateur.jpg"
+        alt="Ma photo"
+        id="myAvatar"
+        onerror="this.src='images/utilisateur.jpg'"
+      />
     </div>
   </div>
 </header>
@@ -35,25 +44,44 @@
 
   <aside class="conversations-list">
     <h3>Discussions</h3>
-    <div style="padding:10px; opacity:.7;">(Liste des discussions à brancher ensuite)</div>
+    <div id="conversationsList" style="padding:10px; opacity:.85;">
+      Chargement des discussions...
+    </div>
   </aside>
 
   <main class="messagerie">
 
     <div class="conversation-header">
       <div class="avatar">
-        <img src="images/utilisateur.jpg" alt="Avatar" id="recipientAvatar"
-             onerror="this.src='images/utilisateur.jpg'">
+        <img
+          src="images/utilisateur.jpg"
+          alt="Avatar"
+          id="recipientAvatar"
+          onerror="this.src='images/utilisateur.jpg'"
+        />
       </div>
-      <div class="pseudo">Discussion avec <strong id="recipientName">...</strong></div>
+      <div class="pseudo">
+        Discussion avec <strong id="recipientName">...</strong>
+      </div>
     </div>
 
-    <div id="debugBox" style="padding:10px; color:#b00020; font-size:14px; white-space:pre-wrap;"></div>
+    <div
+      id="debugBox"
+      style="padding:10px; color:#b00020; font-size:14px; white-space:pre-wrap;"
+    ></div>
 
-    <div id="messagesContainer" style="display:flex; flex-direction:column; gap:10px; padding:10px;"></div>
+    <div
+      id="messagesContainer"
+      style="display:flex; flex-direction:column; gap:10px; padding:10px;"
+    ></div>
 
     <form class="message-form" id="messageForm" autocomplete="off">
-      <input id="messageInput" type="text" placeholder="Écris ton message..." required>
+      <input
+        id="messageInput"
+        type="text"
+        placeholder="Écris ton message..."
+        required
+      />
       <button id="sendBtn" type="submit">Envoyer pour 5 crédits</button>
     </form>
 
@@ -83,12 +111,6 @@
   import { supabase } from "./supabaseClient.js";
 
   const debugBox = document.getElementById("debugBox");
-  function setError(msg, err) {
-    console.error(msg, err || "");
-    debugBox.textContent = msg + (err?.message ? "\n" + err.message : "");
-  }
-  function clearError(){ debugBox.textContent=""; }
-
   const recipientNameEl = document.getElementById("recipientName");
   const recipientAvatarEl = document.getElementById("recipientAvatar");
   const myAvatarEl = document.getElementById("myAvatar");
@@ -97,103 +119,313 @@
   const messageInput = document.getElementById("messageInput");
   const sendBtn = document.getElementById("sendBtn");
   const logoutBtn = document.getElementById("logoutBtn");
+  const conversationsList = document.getElementById("conversationsList");
 
-  const params = new URLSearchParams(location.search);
-  const recipientId = params.get("to") || params.get("user");
+  const params = new URLSearchParams(window.location.search);
+  let recipientId = params.get("to") || params.get("user");
 
   let myUserId = null;
+  let realtimeChannel = null;
+
+  function setError(msg, err = null) {
+    console.error(msg, err || "");
+    debugBox.style.color = "#b00020";
+    debugBox.textContent = msg + (err?.message ? "\n" + err.message : "");
+  }
+
+  function setInfo(msg) {
+    debugBox.style.color = "#666";
+    debugBox.textContent = msg;
+  }
+
+  function clearError() {
+    debugBox.textContent = "";
+  }
 
   function escapeHtml(str) {
-    return (str ?? "").replace(/[&<>"']/g, (m) => ({
-      "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    return String(str ?? "").replace(/[&<>"']/g, (m) => ({
+      "&": "&amp;",
+      "<": "&lt;",
+      ">": "&gt;",
+      '"': "&quot;",
+      "'": "&#039;"
     }[m]));
   }
 
-  function renderMessage({ content, created_at, sender_id }) {
+  function scrollMessagesToBottom() {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  function renderMessage(message) {
+    const { content, created_at, sender_id } = message;
     const isMine = sender_id === myUserId;
+
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
     div.innerHTML = `
-      ${escapeHtml(content)}
-      <time>${new Date(created_at).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit"})}</time>
+      <div>${escapeHtml(content)}</div>
+      <time style="display:block; font-size:12px; opacity:.7; margin-top:4px;">
+        ${created_at ? new Date(created_at).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit"
+        }) : ""}
+      </time>
     `;
+
     messagesContainer.appendChild(div);
   }
 
   async function requireSession() {
     const { data, error } = await supabase.auth.getSession();
     if (error) throw error;
-    if (!data?.session) { location.href="connexion.html"; return null; }
+
+    if (!data?.session) {
+      window.location.href = "connexion.html";
+      return null;
+    }
+
     return data.session;
   }
 
-  async function loadProfiles() {
-    // Moi (on récupère juste username)
-    const me = await supabase
+  async function loadMyProfile() {
+    const { data, error } = await supabase
       .from("profiles")
-      .select("username")
-      .or(`id.eq.${myUserId},user_id.eq.${myUserId}`)
+      .select("id, username")
+      .eq("id", myUserId)
       .maybeSingle();
 
-    if (!me.error && me.data) {
-      myAvatarEl.src = "images/utilisateur.jpg"; // avatar par défaut
-      myAvatarEl.alt = me.data.username || "Moi";
+    if (error) {
+      console.warn("Profil utilisateur introuvable :", error.message);
+      return null;
     }
 
-    // Destinataire (juste username)
-    const other = await supabase
+    if (data) {
+      myAvatarEl.src = "images/utilisateur.jpg";
+      myAvatarEl.alt = data.username || "Moi";
+    }
+
+    return data;
+  }
+
+  async function loadRecipientProfile() {
+    if (!recipientId) return null;
+
+    const { data, error } = await supabase
       .from("profiles")
-      .select("username")
-      .or(`id.eq.${recipientId},user_id.eq.${recipientId}`)
+      .select("id, username")
+      .eq("id", recipientId)
       .maybeSingle();
 
-    if (other.error || !other.data) {
-      setError("Destinataire introuvable dans profiles.", other.error);
-      return false;
+    if (error || !data) {
+      setError("Destinataire introuvable dans profiles.", error);
+      return null;
     }
 
-    recipientNameEl.textContent = other.data.username || "Utilisateur";
-    recipientAvatarEl.src = "images/utilisateur.jpg"; // avatar par défaut
-    recipientAvatarEl.alt = other.data.username || "Avatar";
-    return true;
+    recipientNameEl.textContent = data.username || "Utilisateur";
+    recipientAvatarEl.src = "images/utilisateur.jpg";
+    recipientAvatarEl.alt = data.username || "Avatar";
+
+    return data;
   }
 
   async function loadMessages() {
+    if (!recipientId || !myUserId) return;
+
     messagesContainer.innerHTML = "";
+
     const { data, error } = await supabase
       .from("messages")
-      .select("id, sender_id, receiver_id, content, created_at")
-      .or(`and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`)
+      .select("id, sender_id, receiver_id, content, created_at, read")
+      .or(
+        `and(sender_id.eq.${myUserId},receiver_id.eq.${recipientId}),and(sender_id.eq.${recipientId},receiver_id.eq.${myUserId})`
+      )
       .order("created_at", { ascending: true });
 
-    if (error) { setError("Chargement messages impossible.", error); return; }
+    if (error) {
+      setError("Chargement des messages impossible.", error);
+      return;
+    }
+
     (data || []).forEach(renderMessage);
+    scrollMessagesToBottom();
+  }
+
+  async function markMessagesAsRead() {
+    if (!recipientId || !myUserId) return;
+
+    const { error } = await supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("sender_id", recipientId)
+      .eq("receiver_id", myUserId)
+      .eq("read", false);
+
+    if (error) {
+      console.warn("Impossible de marquer comme lus :", error.message);
+    }
   }
 
   async function sendMessage(text) {
+    const cleanText = text.trim();
+    if (!cleanText) return null;
+
     const { data, error } = await supabase
       .from("messages")
-      .insert({ sender_id: myUserId, receiver_id: recipientId, content: text })
-      .select("id, sender_id, receiver_id, content, created_at")
+      .insert([
+        {
+          sender_id: myUserId,
+          receiver_id: recipientId,
+          content: cleanText
+        }
+      ])
+      .select("id, sender_id, receiver_id, content, created_at, read")
       .single();
 
-    if (error) { setError("Envoi impossible.", error); return null; }
+    if (error) {
+      setError("Envoi impossible.", error);
+      return null;
+    }
+
     return data;
+  }
+
+  async function loadConversations() {
+    if (!myUserId) return;
+
+    const { data: allMessages, error } = await supabase
+      .from("messages")
+      .select("sender_id, receiver_id, content, created_at")
+      .or(`sender_id.eq.${myUserId},receiver_id.eq.${myUserId}`)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      conversationsList.innerHTML = `<div style="color:#b00020;">Impossible de charger les discussions.</div>`;
+      return;
+    }
+
+    const uniqueUserIds = [];
+    const seen = new Set();
+
+    for (const msg of allMessages || []) {
+      const otherUserId = msg.sender_id === myUserId ? msg.receiver_id : msg.sender_id;
+      if (otherUserId && !seen.has(otherUserId)) {
+        seen.add(otherUserId);
+        uniqueUserIds.push(otherUserId);
+      }
+    }
+
+    if (!uniqueUserIds.length) {
+      conversationsList.innerHTML = `<div style="opacity:.7;">Aucune discussion pour le moment.</div>`;
+      return;
+    }
+
+    const { data: profiles, error: profilesError } = await supabase
+      .from("profiles")
+      .select("id, username")
+      .in("id", uniqueUserIds);
+
+    if (profilesError) {
+      conversationsList.innerHTML = `<div style="color:#b00020;">Impossible de charger les profils des discussions.</div>`;
+      return;
+    }
+
+    const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
+
+    conversationsList.innerHTML = uniqueUserIds
+      .map((userId) => {
+        const profile = profileMap.get(userId);
+        const username = profile?.username || "Utilisateur";
+        const active = userId === recipientId;
+
+        return `
+          <a
+            href="message.html?to=${encodeURIComponent(userId)}"
+            style="
+              display:block;
+              padding:10px;
+              margin-bottom:8px;
+              border-radius:10px;
+              text-decoration:none;
+              color:#111;
+              background:${active ? "#f0f4ff" : "#fff"};
+              border:${active ? "1px solid #4a7cff" : "1px solid #e5e5e5"};
+            "
+          >
+            ${escapeHtml(username)}
+          </a>
+        `;
+      })
+      .join("");
+  }
+
+  function subscribeToRealtime() {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+
+    realtimeChannel = supabase
+      .channel("private-messages-room")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages"
+        },
+        async (payload) => {
+          const newMessage = payload.new;
+
+          const isThisConversation =
+            (newMessage.sender_id === myUserId && newMessage.receiver_id === recipientId) ||
+            (newMessage.sender_id === recipientId && newMessage.receiver_id === myUserId);
+
+          if (isThisConversation) {
+            await loadMessages();
+            await markMessagesAsRead();
+          }
+
+          await loadConversations();
+        }
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "messages"
+        },
+        async () => {
+          await loadConversations();
+        }
+      )
+      .subscribe((status) => {
+        console.log("Realtime status :", status);
+      });
   }
 
   messageForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
+
+    if (!recipientId) {
+      setInfo("Sélectionne une discussion à gauche avant d'envoyer un message.");
+      return;
+    }
+
     const text = messageInput.value.trim();
     if (!text) return;
 
     sendBtn.disabled = true;
+
     const inserted = await sendMessage(text);
     if (inserted) {
-      renderMessage(inserted);
       messageInput.value = "";
       await loadMessages();
+      await loadConversations();
+      scrollMessagesToBottom();
     }
+
     sendBtn.disabled = false;
     messageInput.focus();
   });
@@ -201,27 +433,44 @@
   logoutBtn.addEventListener("click", async (e) => {
     e.preventDefault();
     await supabase.auth.signOut();
-    location.href="connexion.html";
+    window.location.href = "connexion.html";
   });
 
-  (async function init(){
-    try{
-      if(!recipientId){ setError("Lien invalide: il manque ?user=UUID (ou ?to=UUID)"); return; }
+  window.addEventListener("beforeunload", () => {
+    if (realtimeChannel) {
+      supabase.removeChannel(realtimeChannel);
+    }
+  });
+
+  (async function init() {
+    try {
       const session = await requireSession();
-      if(!session) return;
+      if (!session) return;
+
       myUserId = session.user.id;
 
-      const ok = await loadProfiles();
-      if(!ok) return;
+      await loadMyProfile();
+      await loadConversations();
+
+      if (!recipientId) {
+        recipientNameEl.textContent = "...";
+        setInfo("Sélectionne une discussion à gauche pour afficher les messages.");
+        subscribeToRealtime();
+        return;
+      }
+
+      const recipientProfile = await loadRecipientProfile();
+      if (!recipientProfile) return;
 
       await loadMessages();
+      await markMessagesAsRead();
       clearError();
-    }catch(e){
-      setError("Erreur init.", e);
+      subscribeToRealtime();
+    } catch (e) {
+      setError("Erreur lors de l'initialisation.", e);
     }
   })();
 </script>
 
 </body>
 </html>
-
