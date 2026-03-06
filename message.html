@@ -72,7 +72,14 @@
 
     <div
       id="messagesContainer"
-      style="display:flex; flex-direction:column; gap:10px; padding:10px; overflow-y:auto;"
+      style="
+        display:flex;
+        flex-direction:column;
+        gap:10px;
+        padding:10px;
+        overflow-y:auto;
+        height:calc(100vh - 240px);
+      "
     ></div>
 
     <form class="message-form" id="messageForm" autocomplete="off">
@@ -111,7 +118,7 @@
   import { supabase } from "./supabaseClient.js";
 
   const DEFAULT_AVATAR = "images/utilisateur.jpg";
-  const STORAGE_BUCKET = "photos"; // ⚠️ remplace par le vrai nom de ton bucket si besoin
+  const STORAGE_BUCKET = "profile_photos";
 
   const debugBox = document.getElementById("debugBox");
   const recipientNameEl = document.getElementById("recipientName");
@@ -125,7 +132,10 @@
   const conversationsList = document.getElementById("conversationsList");
 
   let myUserId = null;
-  let recipientId = new URLSearchParams(window.location.search).get("to") || new URLSearchParams(window.location.search).get("user");
+  let recipientId =
+    new URLSearchParams(window.location.search).get("to") ||
+    new URLSearchParams(window.location.search).get("user");
+
   let realtimeChannel = null;
   let loadedMessageIds = new Set();
   let currentConversationLoaded = false;
@@ -423,7 +433,7 @@
   }
 
   async function openConversation(userId, pushUrl = true) {
-    if (!userId || userId === recipientId && currentConversationLoaded) return;
+    if (!userId || (userId === recipientId && currentConversationLoaded)) return;
 
     recipientId = userId;
     currentConversationLoaded = false;
