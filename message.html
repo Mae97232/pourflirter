@@ -111,6 +111,7 @@
   import { supabase } from "./supabaseClient.js";
 
   const DEFAULT_AVATAR = "images/utilisateur.jpg";
+  const STORAGE_BUCKET = "photos"; // ⚠️ remplace par le vrai nom de ton bucket si besoin
 
   const debugBox = document.getElementById("debugBox");
   const recipientNameEl = document.getElementById("recipientName");
@@ -123,13 +124,11 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const conversationsList = document.getElementById("conversationsList");
 
-  const params = new URLSearchParams(window.location.search);
-  let recipientId = params.get("to") || params.get("user");
-
   let myUserId = null;
+  let recipientId = new URLSearchParams(window.location.search).get("to") || new URLSearchParams(window.location.search).get("user");
   let realtimeChannel = null;
   let loadedMessageIds = new Set();
-  let firstLoadDone = false;
+  let currentConversationLoaded = false;
 
   function setError(msg, err = null) {
     console.error(msg, err || "");
@@ -156,18 +155,16 @@
     }[m]));
   }
 
-  function normalizePhotoUrl(photoValue) {
+  function getPhotoUrl(photoValue) {
     if (!photoValue || typeof photoValue !== "string") return DEFAULT_AVATAR;
 
     const value = photoValue.trim();
     if (!value) return DEFAULT_AVATAR;
 
-    // URL complète
     if (value.startsWith("http://") || value.startsWith("https://")) {
       return value;
     }
 
-    // Chemin local du site
     if (
       value.startsWith("/") ||
       value.startsWith("./") ||
@@ -177,14 +174,8 @@
       return value;
     }
 
-    // Si tu stockes juste un nom de fichier ou un chemin storage,
-    // on le traite comme chemin local relatif
-    return value;
-  }
-
-  function getProfileImage(profile) {
-    if (!profile) return DEFAULT_AVATAR;
-    return normalizePhotoUrl(profile.photo);
+    const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(value);
+    return data?.publicUrl || DEFAULT_AVATAR;
   }
 
   function scrollMessagesToBottom(smooth = false) {
@@ -252,10 +243,8 @@
       return null;
     }
 
-    console.log("Ma photo =", data?.photo);
-
     if (data) {
-      myAvatarEl.src = getProfileImage(data);
+      myAvatarEl.src = getPhotoUrl(data.photo);
       myAvatarEl.alt = data.username || "Moi";
     } else {
       myAvatarEl.src = DEFAULT_AVATAR;
@@ -265,7 +254,11 @@
   }
 
   async function loadRecipientProfile() {
-    if (!recipientId) return null;
+    if (!recipientId) {
+      recipientNameEl.textContent = "...";
+      recipientAvatarEl.src = DEFAULT_AVATAR;
+      return null;
+    }
 
     const { data, error } = await supabase
       .from("profiles")
@@ -280,10 +273,8 @@
       return null;
     }
 
-    console.log("Photo destinataire =", data?.photo);
-
     recipientNameEl.textContent = data.username || "Utilisateur";
-    recipientAvatarEl.src = getProfileImage(data);
+    recipientAvatarEl.src = getPhotoUrl(data.photo);
     recipientAvatarEl.alt = data.username || "Avatar";
 
     return data;
@@ -398,12 +389,14 @@
     conversationsList.innerHTML = uniqueUserIds.map((userId) => {
       const profile = profileMap.get(userId);
       const username = profile?.username || "Utilisateur";
-      const avatar = getProfileImage(profile);
+      const avatar = getPhotoUrl(profile?.photo);
       const active = userId === recipientId;
 
       return `
         <a
           href="message.html?to=${encodeURIComponent(userId)}"
+          data-user-id="${escapeHtml(userId)}"
+          class="conversation-link"
           style="
             display:flex;
             align-items:center;
@@ -427,6 +420,31 @@
         </a>
       `;
     }).join("");
+  }
+
+  async function openConversation(userId, pushUrl = true) {
+    if (!userId || userId === recipientId && currentConversationLoaded) return;
+
+    recipientId = userId;
+    currentConversationLoaded = false;
+    clearError();
+    setInfo("Chargement de la conversation...");
+
+    if (pushUrl) {
+      const url = new URL(window.location.href);
+      url.searchParams.set("to", userId);
+      window.history.pushState({}, "", url);
+    }
+
+    await loadConversations();
+
+    const recipientProfile = await loadRecipientProfile();
+    if (!recipientProfile) return;
+
+    await loadMessages({ autoScroll: true });
+    await markMessagesAsRead();
+    clearError();
+    currentConversationLoaded = true;
   }
 
   function subscribeToRealtime() {
@@ -476,6 +494,15 @@
       });
   }
 
+  conversationsList.addEventListener("click", async (e) => {
+    const link = e.target.closest(".conversation-link");
+    if (!link) return;
+
+    e.preventDefault();
+    const userId = link.dataset.userId;
+    await openConversation(userId, true);
+  });
+
   messageForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     clearError();
@@ -509,6 +536,23 @@
     window.location.href = "connexion.html";
   });
 
+  window.addEventListener("popstate", async () => {
+    const params = new URLSearchParams(window.location.search);
+    const newRecipientId = params.get("to") || params.get("user");
+
+    if (!newRecipientId) {
+      recipientId = null;
+      clearMessages();
+      recipientNameEl.textContent = "...";
+      recipientAvatarEl.src = DEFAULT_AVATAR;
+      setInfo("Sélectionne une discussion à gauche pour afficher les messages.");
+      await loadConversations();
+      return;
+    }
+
+    await openConversation(newRecipientId, false);
+  });
+
   window.addEventListener("beforeunload", () => {
     if (realtimeChannel) {
       supabase.removeChannel(realtimeChannel);
@@ -524,23 +568,16 @@
 
       await loadMyProfile();
       await loadConversations();
+      subscribeToRealtime();
 
       if (!recipientId) {
         recipientNameEl.textContent = "...";
         recipientAvatarEl.src = DEFAULT_AVATAR;
         setInfo("Sélectionne une discussion à gauche pour afficher les messages.");
-        subscribeToRealtime();
         return;
       }
 
-      const recipientProfile = await loadRecipientProfile();
-      if (!recipientProfile) return;
-
-      await loadMessages({ autoScroll: !firstLoadDone });
-      await markMessagesAsRead();
-      clearError();
-      subscribeToRealtime();
-      firstLoadDone = true;
+      await openConversation(recipientId, false);
     } catch (e) {
       setError("Erreur lors de l'initialisation.", e);
     }
