@@ -129,6 +129,7 @@
   let myUserId = null;
   let realtimeChannel = null;
   let loadedMessageIds = new Set();
+  let firstLoadDone = false;
 
   function setError(msg, err = null) {
     console.error(msg, err || "");
@@ -155,14 +156,43 @@
     }[m]));
   }
 
-  function getProfileImage(profile) {
-    if (!profile) return DEFAULT_AVATAR;
-    return profile.photo || DEFAULT_AVATAR;
+  function normalizePhotoUrl(photoValue) {
+    if (!photoValue || typeof photoValue !== "string") return DEFAULT_AVATAR;
+
+    const value = photoValue.trim();
+    if (!value) return DEFAULT_AVATAR;
+
+    // URL complète
+    if (value.startsWith("http://") || value.startsWith("https://")) {
+      return value;
+    }
+
+    // Chemin local du site
+    if (
+      value.startsWith("/") ||
+      value.startsWith("./") ||
+      value.startsWith("../") ||
+      value.startsWith("images/")
+    ) {
+      return value;
+    }
+
+    // Si tu stockes juste un nom de fichier ou un chemin storage,
+    // on le traite comme chemin local relatif
+    return value;
   }
 
-  function scrollMessagesToBottom() {
+  function getProfileImage(profile) {
+    if (!profile) return DEFAULT_AVATAR;
+    return normalizePhotoUrl(profile.photo);
+  }
+
+  function scrollMessagesToBottom(smooth = false) {
     requestAnimationFrame(() => {
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      messagesContainer.scrollTo({
+        top: messagesContainer.scrollHeight,
+        behavior: smooth ? "smooth" : "auto"
+      });
     });
   }
 
@@ -222,6 +252,8 @@
       return null;
     }
 
+    console.log("Ma photo =", data?.photo);
+
     if (data) {
       myAvatarEl.src = getProfileImage(data);
       myAvatarEl.alt = data.username || "Moi";
@@ -248,6 +280,8 @@
       return null;
     }
 
+    console.log("Photo destinataire =", data?.photo);
+
     recipientNameEl.textContent = data.username || "Utilisateur";
     recipientAvatarEl.src = getProfileImage(data);
     recipientAvatarEl.alt = data.username || "Avatar";
@@ -255,9 +289,7 @@
     return data;
   }
 
-  async function loadMessages(options = {}) {
-    const { autoScroll = false } = options;
-
+  async function loadMessages({ autoScroll = false } = {}) {
     if (!recipientId || !myUserId) return;
 
     clearMessages();
@@ -278,7 +310,7 @@
     (data || []).forEach((msg) => renderMessage(msg, true));
 
     if (autoScroll) {
-      scrollMessagesToBottom();
+      scrollMessagesToBottom(false);
     }
   }
 
@@ -326,7 +358,7 @@
 
     const { data: allMessages, error } = await supabase
       .from("messages")
-      .select("sender_id, receiver_id, content, created_at, read")
+      .select("sender_id, receiver_id, created_at")
       .or(`sender_id.eq.${myUserId},receiver_id.eq.${myUserId}`)
       .order("created_at", { ascending: false });
 
@@ -363,40 +395,38 @@
 
     const profileMap = new Map((profiles || []).map((p) => [p.id, p]));
 
-    conversationsList.innerHTML = uniqueUserIds
-      .map((userId) => {
-        const profile = profileMap.get(userId);
-        const username = profile?.username || "Utilisateur";
-        const avatar = getProfileImage(profile);
-        const active = userId === recipientId;
+    conversationsList.innerHTML = uniqueUserIds.map((userId) => {
+      const profile = profileMap.get(userId);
+      const username = profile?.username || "Utilisateur";
+      const avatar = getProfileImage(profile);
+      const active = userId === recipientId;
 
-        return `
-          <a
-            href="message.html?to=${encodeURIComponent(userId)}"
-            style="
-              display:flex;
-              align-items:center;
-              gap:10px;
-              padding:10px;
-              margin-bottom:8px;
-              border-radius:10px;
-              text-decoration:none;
-              color:#111;
-              background:${active ? "#f0f4ff" : "#fff"};
-              border:${active ? "1px solid #4a7cff" : "1px solid #e5e5e5"};
-            "
-          >
-            <img
-              src="${escapeHtml(avatar)}"
-              alt="${escapeHtml(username)}"
-              style="width:42px; height:42px; border-radius:50%; object-fit:cover; flex-shrink:0;"
-              onerror="this.src='${DEFAULT_AVATAR}'"
-            />
-            <span style="font-weight:600;">${escapeHtml(username)}</span>
-          </a>
-        `;
-      })
-      .join("");
+      return `
+        <a
+          href="message.html?to=${encodeURIComponent(userId)}"
+          style="
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:10px;
+            margin-bottom:8px;
+            border-radius:10px;
+            text-decoration:none;
+            color:#111;
+            background:${active ? "#f0f4ff" : "#fff"};
+            border:${active ? "1px solid #4a7cff" : "1px solid #e5e5e5"};
+          "
+        >
+          <img
+            src="${escapeHtml(avatar)}"
+            alt="${escapeHtml(username)}"
+            style="width:42px; height:42px; border-radius:50%; object-fit:cover; flex-shrink:0;"
+            onerror="this.src='${DEFAULT_AVATAR}'"
+          />
+          <span style="font-weight:600;">${escapeHtml(username)}</span>
+        </a>
+      `;
+    }).join("");
   }
 
   function subscribeToRealtime() {
@@ -423,7 +453,7 @@
 
           if (isThisConversation) {
             renderMessage(newMessage);
-            scrollMessagesToBottom();
+            scrollMessagesToBottom(true);
             await markMessagesAsRead();
           }
 
@@ -465,7 +495,7 @@
     if (inserted) {
       messageInput.value = "";
       renderMessage(inserted);
-      scrollMessagesToBottom();
+      scrollMessagesToBottom(true);
       await loadConversations();
     }
 
@@ -506,10 +536,11 @@
       const recipientProfile = await loadRecipientProfile();
       if (!recipientProfile) return;
 
-      await loadMessages({ autoScroll: true });
+      await loadMessages({ autoScroll: !firstLoadDone });
       await markMessagesAsRead();
       clearError();
       subscribeToRealtime();
+      firstLoadDone = true;
     } catch (e) {
       setError("Erreur lors de l'initialisation.", e);
     }
